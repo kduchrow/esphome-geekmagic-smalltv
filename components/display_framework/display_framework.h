@@ -6,6 +6,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/color.h"
 #include "esphome/components/display/display.h"
+#include "esphome/components/display/display_buffer.h"
 #include "esphome/components/font/font.h"
 #include "esphome/components/api/custom_api_device.h"
 #include "esphome/components/time/real_time_clock.h"

@@ -24,6 +24,7 @@ logger:
 
 api:
   reboot_timeout: 0s
+  custom_services: true
 
 ota:
   - platform: esphome
