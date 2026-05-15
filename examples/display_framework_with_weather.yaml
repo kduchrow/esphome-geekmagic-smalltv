@@ -9,8 +9,9 @@ esp8266:
 
 external_components:
   - source:
-      type: local
-      path: ../components
+      type: git
+      url: https://github.com/kduchrow/esphome-geekmagic-smalltv
+      ref: main
     components: [display_framework]
   - source:
       type: git

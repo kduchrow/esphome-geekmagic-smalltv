@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import api, display, font, sensor, text_sensor, time
+from esphome.components import api, color as color_comp, display, font, sensor, text_sensor, time
 from esphome.const import CONF_ID
 
 CONF_DISPLAY_ID = "display_id"
@@ -45,12 +45,12 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_SHOW_WEATHER, default=True): cv.boolean,
             cv.Optional(CONF_WEATHER_STATE): cv.use_id(text_sensor.TextSensor),
             cv.Optional(CONF_SUN_ELEVATION): cv.use_id(sensor.Sensor),
-            cv.Optional(CONF_ACCENT_DAY, default="fcb712"): cv.color,
-            cv.Optional(CONF_ACCENT_NIGHT, default="eb1c24"): cv.color,
-            cv.Optional(CONF_BACKGROUND_COLOR, default="000000"): cv.color,
-            cv.Optional(CONF_TITLE_COLOR, default="eb1c24"): cv.color,
-            cv.Optional(CONF_SUBTITLE_COLOR, default="fcb712"): cv.color,
-            cv.Optional(CONF_DETAIL_COLOR, default="fcb712"): cv.color,
+            cv.Optional(CONF_ACCENT_DAY, default="fcb712"): color_comp.hex_color,
+            cv.Optional(CONF_ACCENT_NIGHT, default="eb1c24"): color_comp.hex_color,
+            cv.Optional(CONF_BACKGROUND_COLOR, default="000000"): color_comp.hex_color,
+            cv.Optional(CONF_TITLE_COLOR, default="eb1c24"): color_comp.hex_color,
+            cv.Optional(CONF_SUBTITLE_COLOR, default="fcb712"): color_comp.hex_color,
+            cv.Optional(CONF_DETAIL_COLOR, default="fcb712"): color_comp.hex_color,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -78,12 +78,16 @@ async def to_code(config):
     cg.add(var.set_expiry_interval_ms(config[CONF_EXPIRY_INTERVAL].total_milliseconds))
     cg.add(var.set_update_interval_ms(config[CONF_UPDATE_INTERVAL].total_milliseconds))
     cg.add(var.set_show_weather(config[CONF_SHOW_WEATHER]))
-    cg.add(var.set_accent_day(config[CONF_ACCENT_DAY]))
-    cg.add(var.set_accent_night(config[CONF_ACCENT_NIGHT]))
-    cg.add(var.set_background(config[CONF_BACKGROUND_COLOR]))
-    cg.add(var.set_title_color(config[CONF_TITLE_COLOR]))
-    cg.add(var.set_subtitle_color(config[CONF_SUBTITLE_COLOR]))
-    cg.add(var.set_detail_color(config[CONF_DETAIL_COLOR]))
+    def as_color(value):
+        r, g, b = value
+        return cg.RawExpression(f"Color({r}, {g}, {b})")
+
+    cg.add(var.set_accent_day(as_color(config[CONF_ACCENT_DAY])))
+    cg.add(var.set_accent_night(as_color(config[CONF_ACCENT_NIGHT])))
+    cg.add(var.set_background(as_color(config[CONF_BACKGROUND_COLOR])))
+    cg.add(var.set_title_color(as_color(config[CONF_TITLE_COLOR])))
+    cg.add(var.set_subtitle_color(as_color(config[CONF_SUBTITLE_COLOR])))
+    cg.add(var.set_detail_color(as_color(config[CONF_DETAIL_COLOR])))
 
     if CONF_WEATHER_STATE in config:
         weather_state = await cg.get_variable(config[CONF_WEATHER_STATE])
