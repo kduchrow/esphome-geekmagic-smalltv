@@ -11,6 +11,12 @@ void DisplayFramework::setup() {
   this->slots_.assign(this->max_pages_, {});
   this->current_page_index_ = 0;
 
+  this->register_service(
+      &DisplayFramework::set_page,
+      "set_page",
+      {"page_id", "active", "icon", "title", "subtitle", "details", "valid_for_s"});
+  this->register_service(&DisplayFramework::set_notification, "set_notification", {"enabled", "icon"});
+
   if (this->update_interval_ms_ > 0) {
     this->set_interval("update", this->update_interval_ms_, [this]() { this->request_update_(); });
   }

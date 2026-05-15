@@ -7,6 +7,7 @@
 #include "esphome/core/color.h"
 #include "esphome/components/display/display.h"
 #include "esphome/components/font/font.h"
+#include "esphome/components/api/custom_api_device.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/sensor/sensor.h"
@@ -14,7 +15,7 @@
 namespace esphome {
 namespace display_framework {
 
-class DisplayFramework : public Component {
+class DisplayFramework : public Component, public api::CustomAPIDevice {
  public:
   void set_display(display::DisplayBuffer *display) { this->display_ = display; }
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }

@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import api, color as color_comp, display, font, sensor, text_sensor, time
+from esphome.components import color as color_comp, display, font, sensor, text_sensor, time
 from esphome.const import CONF_ID
 
 CONF_DISPLAY_ID = "display_id"
@@ -97,25 +97,3 @@ async def to_code(config):
         sun_elevation = await cg.get_variable(config[CONF_SUN_ELEVATION])
         cg.add(var.set_sun_elevation(sun_elevation))
 
-    api.register_service(
-        var.set_page,
-        "set_page",
-        {
-            cv.Required("page_id"): cv.string,
-            cv.Required("active"): cv.boolean,
-            cv.Optional("icon", default=""): cv.string,
-            cv.Optional("title", default=""): cv.string,
-            cv.Optional("subtitle", default=""): cv.string,
-            cv.Optional("details", default=""): cv.string,
-            cv.Optional("valid_for_s", default=0): cv.int_,
-        },
-    )
-
-    api.register_service(
-        var.set_notification,
-        "set_notification",
-        {
-            cv.Required("enabled"): cv.boolean,
-            cv.Optional("icon", default=""): cv.string,
-        },
-    )
