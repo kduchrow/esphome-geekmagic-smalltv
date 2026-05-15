@@ -44,3 +44,56 @@ automation:
         data:
           enabled: true
           icon: mdi:bell-ring
+
+  - alias: Display WashData Summary
+    trigger:
+      - platform: time_pattern
+        minutes: "/2"
+      - platform: state
+        entity_id:
+          - binary_sensor.spulmaschine_lauft
+          - binary_sensor.waschmaschiene_lauft
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ is_state('binary_sensor.spulmaschine_lauft','on')
+                     or is_state('binary_sensor.waschmaschiene_lauft','on') }}
+            sequence:
+              - service: esphome.geekmagic_smalltv_01_set_page
+                data:
+                  page_id: washdata
+                  active: true
+                  icon: mdi:washing-machine
+                  title: WashData
+                  subtitle: >
+                    {{
+                      ('Spuelmaschine ' ~ ('laeuft' if is_state('binary_sensor.spulmaschine_lauft','on') else 'aus'))
+                      ~ ' | '
+                      ~ ('Waschmaschine ' ~ ('laeuft' if is_state('binary_sensor.waschmaschiene_lauft','on') else 'aus'))
+                    }}
+                  details: >
+                    {{
+                      'SP ' ~ (states('sensor.spulmaschine_fortschritt') | default('0')) ~ '% '
+                      ~ (states('sensor.spulmaschine_verbleibende_zeit') | default('n/a'))
+                      ~ '-|-'
+                      ~ (states('sensor.spulmaschine_programm') | default('Programm'))
+                      ~ '-|-'
+                      ~ ('[' ~ ('#' * ((states('sensor.spulmaschine_fortschritt')|int(0)) // 10))
+                          ~ ('.' * (10 - ((states('sensor.spulmaschine_fortschritt')|int(0)) // 10))) ~ ']')
+                      ~ '-|-'
+                      ~ 'WM ' ~ (states('sensor.waschmaschiene_fortschritt') | default('0')) ~ '% '
+                      ~ (states('sensor.waschmaschiene_verbleibende_zeit') | default('n/a'))
+                      ~ '-|-'
+                      ~ (states('sensor.waschmaschiene_programm') | default('Programm'))
+                      ~ '-|-'
+                      ~ ('[' ~ ('#' * ((states('sensor.waschmaschiene_fortschritt')|int(0)) // 10))
+                          ~ ('.' * (10 - ((states('sensor.waschmaschiene_fortschritt')|int(0)) // 10))) ~ ']')
+                    }}
+                  valid_for_s: 3600
+        default:
+          - service: esphome.geekmagic_smalltv_01_set_page
+            data:
+              page_id: washdata
+              active: false

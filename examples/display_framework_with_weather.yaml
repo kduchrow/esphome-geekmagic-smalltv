@@ -123,8 +123,11 @@ display_framework:
   time_id: sntp_time
   text_font: text_font_14
   icon_font: icon_font_48
+  update_interval: 200ms
   show_weather: true
   weather_state: ha_weather_state
   sun_elevation: ha_sun_elevation
   wifi_signal: wifi_signal_db
   wifi_ip: wifi_ip_address
+  max_headers: 3
+  header_rotation_interval: 5s

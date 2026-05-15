@@ -13,6 +13,8 @@ static const char *const TAG = "display_framework";
 void DisplayFramework::setup() {
   this->slots_.assign(this->max_pages_, {});
   this->current_page_index_ = 0;
+  this->headers_.clear();
+  this->current_header_index_ = 0;
 
   this->register_service(
       &DisplayFramework::set_page,
@@ -32,9 +34,26 @@ void DisplayFramework::setup() {
       this->request_update_();
     });
   }
+  if (this->header_rotation_interval_ms_ > 0) {
+    this->set_interval("header_rotate", this->header_rotation_interval_ms_, [this]() {
+      this->rotate_header_();
+      this->request_update_();
+    });
+  }
   if (this->expiry_interval_ms_ > 0) {
     this->set_interval("expire", this->expiry_interval_ms_, [this]() {
-      if (this->expire_pages_()) {
+      bool changed = this->expire_pages_();
+      uint32_t now_ts = 0;
+      if (this->clock_ != nullptr) {
+        auto now = this->clock_->now();
+        if (now.is_valid()) {
+          now_ts = now.timestamp;
+        }
+      }
+      if (this->expire_headers_(now_ts)) {
+        changed = true;
+      }
+      if (changed) {
         this->request_update_();
       }
     });
@@ -143,31 +162,39 @@ void DisplayFramework::set_header(bool active, std::string icon, std::string tit
   }
 
   if (!active) {
-    this->header_ = HeaderSlot{};
+    this->headers_.clear();
+    this->current_header_index_ = 0;
     this->request_update_();
     return;
   }
 
-  this->header_.active = true;
-  this->header_.icon = icon;
-  this->header_.title = title;
-  this->header_.subtitle = subtitle;
-  this->header_.expiry_ts = expiry;
-  this->header_.pulse_enabled = pulse;
-  this->header_.pulse_period_ms = pulse_period_ms > 0 ? static_cast<uint32_t>(pulse_period_ms) : 1200;
-  this->header_.pulse_min = pulse_min;
-  this->header_.pulse_max = pulse_max;
-  if (this->header_.pulse_min < 0.0f) this->header_.pulse_min = 0.0f;
-  if (this->header_.pulse_max < 0.0f) this->header_.pulse_max = 0.0f;
-  if (this->header_.pulse_min > 1.0f) this->header_.pulse_min = 1.0f;
-  if (this->header_.pulse_max > 1.0f) this->header_.pulse_max = 1.0f;
+  HeaderSlot slot{};
+  slot.active = true;
+  slot.icon = icon;
+  slot.title = title;
+  slot.subtitle = subtitle;
+  slot.expiry_ts = expiry;
+  slot.pulse_enabled = pulse;
+  slot.pulse_period_ms = pulse_period_ms > 0 ? static_cast<uint32_t>(pulse_period_ms) : 1200;
+  slot.pulse_min = pulse_min;
+  slot.pulse_max = pulse_max;
+  if (slot.pulse_min < 0.0f) slot.pulse_min = 0.0f;
+  if (slot.pulse_max < 0.0f) slot.pulse_max = 0.0f;
+  if (slot.pulse_min > 1.0f) slot.pulse_min = 1.0f;
+  if (slot.pulse_max > 1.0f) slot.pulse_max = 1.0f;
 
   Color parsed_color{};
   if (!icon_color.empty() && this->parse_hex_color_(icon_color, parsed_color)) {
-    this->header_.icon_color_set = true;
-    this->header_.icon_color = parsed_color;
-  } else {
-    this->header_.icon_color_set = false;
+    slot.icon_color_set = true;
+    slot.icon_color = parsed_color;
+  }
+
+  this->headers_.push_back(slot);
+  if (static_cast<int>(this->headers_.size()) > this->max_headers_) {
+    this->headers_.erase(this->headers_.begin());
+    if (this->current_header_index_ > 0) {
+      this->current_header_index_ -= 1;
+    }
   }
   this->request_update_();
 }
@@ -288,8 +315,8 @@ bool DisplayFramework::is_expired_(const PageSlot &slot, uint32_t now_ts) const 
   return slot.active && slot.expiry_ts > 0 && now_ts > 0 && now_ts >= slot.expiry_ts;
 }
 
-bool DisplayFramework::is_header_expired_(uint32_t now_ts) const {
-  return this->header_.active && this->header_.expiry_ts > 0 && now_ts > 0 && now_ts >= this->header_.expiry_ts;
+bool DisplayFramework::is_header_expired_(const HeaderSlot &slot, uint32_t now_ts) const {
+  return slot.active && slot.expiry_ts > 0 && now_ts > 0 && now_ts >= slot.expiry_ts;
 }
 
 int DisplayFramework::find_index_(const std::string &page_id) const {
@@ -372,6 +399,30 @@ bool DisplayFramework::expire_pages_() {
   return changed;
 }
 
+bool DisplayFramework::expire_headers_(uint32_t now_ts) {
+  if (this->headers_.empty() || now_ts == 0) {
+    return false;
+  }
+  bool changed = false;
+  for (auto it = this->headers_.begin(); it != this->headers_.end();) {
+    if (this->is_header_expired_(*it, now_ts)) {
+      it = this->headers_.erase(it);
+      changed = true;
+      if (this->current_header_index_ > 0) {
+        this->current_header_index_ -= 1;
+      }
+    } else {
+      ++it;
+    }
+  }
+  if (this->headers_.empty()) {
+    this->current_header_index_ = 0;
+  } else if (this->current_header_index_ >= static_cast<int>(this->headers_.size())) {
+    this->current_header_index_ = 0;
+  }
+  return changed;
+}
+
 void DisplayFramework::refresh_current_page_() {
   if (this->slots_.empty()) {
     this->current_page_index_ = 0;
@@ -405,23 +456,45 @@ void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Col
   const int header_y = 28;
   const int icon_x = width - 52;
   const int icon_y = 18;
-  bool header_active = this->header_.active && !this->is_header_expired_(now_ts);
-  Color header_icon_color = header_active && this->header_.icon_color_set ? this->header_.icon_color : accent_color;
-  if (header_active && this->header_.pulse_enabled) {
+  bool header_active = !this->headers_.empty();
+  HeaderSlot *header = nullptr;
+  if (header_active) {
+    if (this->current_header_index_ >= static_cast<int>(this->headers_.size())) {
+      this->current_header_index_ = 0;
+    }
+    header = &this->headers_[this->current_header_index_];
+    if (this->is_header_expired_(*header, now_ts)) {
+      this->expire_headers_(now_ts);
+      header_active = !this->headers_.empty();
+      if (header_active) {
+        if (this->current_header_index_ >= static_cast<int>(this->headers_.size())) {
+          this->current_header_index_ = 0;
+        }
+        header = &this->headers_[this->current_header_index_];
+      } else {
+        header = nullptr;
+      }
+    }
+  }
+
+  Color header_icon_color = (header_active && header != nullptr && header->icon_color_set)
+                                ? header->icon_color
+                                : accent_color;
+  if (header_active && header != nullptr && header->pulse_enabled) {
     header_icon_color = this->apply_pulse_(
-        header_icon_color, this->header_.pulse_period_ms, this->header_.pulse_min, this->header_.pulse_max);
+        header_icon_color, header->pulse_period_ms, header->pulse_min, header->pulse_max);
   }
 
   if (header_active) {
-    if (!this->header_.title.empty()) {
+    if (header != nullptr && !header->title.empty()) {
       it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
-                this->header_.title.c_str());
+                header->title.c_str());
     }
-    if (!this->header_.subtitle.empty()) {
+    if (header != nullptr && !header->subtitle.empty()) {
       it.printf(4, header_y + 16, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "%s",
-                this->header_.subtitle.c_str());
+                header->subtitle.c_str());
     }
-    std::string icon = this->resolve_icon_glyph_(this->header_.icon);
+    std::string icon = header != nullptr ? this->resolve_icon_glyph_(header->icon) : "";
     if (!icon.empty()) {
       it.printf(icon_x, icon_y, this->icon_font_, header_icon_color, display::TextAlign::TOP_LEFT, "%s",
                 icon.c_str());
@@ -449,6 +522,13 @@ void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Col
 
   it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "HAPPY DAY");
   it.printf(4, header_y + 16, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, ":)");
+}
+
+void DisplayFramework::rotate_header_() {
+  if (this->headers_.size() <= 1) {
+    return;
+  }
+  this->current_header_index_ = (this->current_header_index_ + 1) % static_cast<int>(this->headers_.size());
 }
 
 void DisplayFramework::render_footer_(display::Display &it, Color accent_color) {

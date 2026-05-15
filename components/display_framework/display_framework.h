@@ -39,6 +39,8 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_detail_color(Color color) { this->detail_color_ = color; }
   void set_footer_left(int mode) { this->footer_left_ = mode; }
   void set_footer_right(int mode) { this->footer_right_ = mode; }
+  void set_max_headers(int max_headers) { this->max_headers_ = max_headers; }
+  void set_header_rotation_interval_ms(uint32_t ms) { this->header_rotation_interval_ms_ = ms; }
 
   void set_page(std::string page_id, bool active, std::string icon, std::string title, std::string subtitle,
                 std::string details, int32_t valid_for_s);
@@ -82,13 +84,15 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   };
 
   bool is_expired_(const PageSlot &slot, uint32_t now_ts) const;
-  bool is_header_expired_(uint32_t now_ts) const;
+  bool is_header_expired_(const HeaderSlot &slot, uint32_t now_ts) const;
   int find_index_(const std::string &page_id) const;
   void clear_slot_(int index);
   void shift_left_from_(int index);
   void rotate_page_();
   bool expire_pages_();
+  bool expire_headers_(uint32_t now_ts);
   void refresh_current_page_();
+  void rotate_header_();
   void render_header_(display::Display &it, uint32_t now_ts, Color accent_color);
   void render_footer_(display::Display &it, Color accent_color);
   int wifi_level_from_rssi_(float rssi) const;
@@ -112,10 +116,12 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   sensor::Sensor *wifi_signal_{nullptr};
 
   int max_pages_{5};
+  int max_headers_{3};
   std::string delimiter_{"-|-"};
   uint32_t rotation_interval_ms_{20000};
   uint32_t expiry_interval_ms_{10000};
   uint32_t update_interval_ms_{1000};
+  uint32_t header_rotation_interval_ms_{5000};
   bool show_weather_{true};
 
   Color accent_day_{Color(0xFC, 0xB7, 0x12)};
@@ -128,7 +134,8 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   int footer_right_{FOOTER_WIFI};
 
   std::vector<PageSlot> slots_;
-  HeaderSlot header_{};
+  std::vector<HeaderSlot> headers_{};
+  int current_header_index_{0};
   int current_page_index_{0};
   bool notification_enabled_{false};
   std::string notification_icon_{"mdi:bell"};

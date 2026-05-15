@@ -15,6 +15,8 @@ This repo provides an ESPHome external component that implements a reusable disp
 2. Define the display and call the framework render method.
 3. Send pages via the `set_page` service.
 
+Note: set `api.custom_services: true` in your ESPHome YAML so custom services can be registered.
+
 Example snippet:
 
 ```yaml
@@ -37,6 +39,16 @@ pages:
   - id: framework
     lambda: |-
       id(dfw).render(it);
+
+api:
+  custom_services: true
+
+display_framework:
+  id: dfw
+  display_id: my_display
+  time_id: sntp_time
+  text_font: text_font_14
+  icon_font: icon_font_48
 ```
 
 ## Services
@@ -60,3 +72,5 @@ See the `examples/` folder for complete configurations and Home Assistant automa
 - Fonts and colors can be overridden via the component configuration.
 - Footer defaults to IP on the left and WiFi strength on the right when `wifi_ip` and `wifi_signal` are configured.
 - Header icon can pulse when `pulse` is enabled in the `set_header` service call.
+- For smoother header pulse animation, lower `update_interval` (for example `200ms`).
+- Multiple header messages are queued (default 3) and rotated every 5 seconds.

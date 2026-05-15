@@ -155,7 +155,9 @@ display_framework:
   delimiter: "-|-"
   rotation_interval: 20s
   expiry_interval: 10s
-  update_interval: 1s
+  update_interval: 200ms
   show_weather: false
   wifi_signal: wifi_signal_db
   wifi_ip: wifi_ip_address
+  max_headers: 3
+  header_rotation_interval: 5s
