@@ -1,0 +1,29 @@
+automation:
+  - alias: Display Weather Forecast
+    trigger:
+      - platform: time_pattern
+        minutes: "/15"
+    condition:
+      - condition: time
+        after: "05:00:00"
+        before: "22:00:00"
+    action:
+      - service: esphome.geekmagic_smalltv_01_set_page
+        data:
+          page_id: weather_forecast
+          active: true
+          icon: mdi:weather-rainy
+          title: Weather
+          subtitle: Forecast
+          details: "{{ 'Now ' ~ (state_attr('weather.home', 'temperature') | round(0) if state_attr('weather.home', 'temperature') is not none else 'n/a') ~ (state_attr('weather.home', 'temperature_unit') | default('C')) ~ '-|-' ~ 'Tomorrow ' ~ ((state_attr('weather.home', 'forecast')[0].temperature | round(0)) if (state_attr('weather.home', 'forecast') or []) | count > 0 and (state_attr('weather.home', 'forecast')[0].temperature is not none) else 'n/a') ~ (state_attr('weather.home', 'temperature_unit') | default('C')) ~ '-|-' ~ 'Rain ' ~ ('yes' if (state_attr('weather.home', 'forecast') or []) | count > 0 and (state_attr('weather.home', 'forecast')[0].condition | default('')) in ['rainy','pouring','lightning-rainy','hail','snowy-rainy'] else 'no') }}"
+          valid_for_s: 3600
+  - alias: Display Notification
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.door
+        to: "on"
+    action:
+      - service: esphome.geekmagic_smalltv_01_set_notification
+        data:
+          enabled: true
+          icon: mdi:bell-ring
