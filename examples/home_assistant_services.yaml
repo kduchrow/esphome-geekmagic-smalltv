@@ -11,6 +11,11 @@ automation:
           title: "STATUS"
           subtitle: "All good"
           valid_for_s: 3600
+          icon_color: "fcb712"
+          pulse: true
+          pulse_period_ms: 1200
+          pulse_min: 0.4
+          pulse_max: 1.0
   - alias: Display Weather Forecast
     trigger:
       - platform: time_pattern

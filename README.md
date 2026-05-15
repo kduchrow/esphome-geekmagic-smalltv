@@ -45,7 +45,8 @@ pages:
   - `page_id` (string), `active` (bool), `icon` (string), `title` (string), `subtitle` (string),
     `details` (string), `valid_for_s` (int, 0 = no expiry)
 - `set_header`
-  - `active` (bool), `icon` (string), `title` (string), `subtitle` (string), `valid_for_s` (int, 0 = no expiry)
+  - `active` (bool), `icon` (string), `title` (string), `subtitle` (string), `valid_for_s` (int, 0 = no expiry),
+    `icon_color` (hex string), `pulse` (bool), `pulse_period_ms` (int), `pulse_min` (float), `pulse_max` (float)
 - `set_notification`
   - `enabled` (bool), `icon` (string)
 
@@ -58,4 +59,4 @@ See the `examples/` folder for complete configurations and Home Assistant automa
 - Default delimiter is `-|-` and up to four detail lines are rendered.
 - Fonts and colors can be overridden via the component configuration.
 - Footer defaults to IP on the left and WiFi strength on the right when `wifi_ip` and `wifi_signal` are configured.
-- Header icon can pulse when `header_pulse` is enabled; use `header_icon_color` and pulse settings to customize.
+- Header icon can pulse when `pulse` is enabled in the `set_header` service call.

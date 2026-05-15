@@ -19,7 +19,8 @@ void DisplayFramework::setup() {
       "set_page",
       {"page_id", "active", "icon", "title", "subtitle", "details", "valid_for_s"});
   this->register_service(&DisplayFramework::set_header, "set_header",
-                         {"active", "icon", "title", "subtitle", "valid_for_s"});
+                         {"active", "icon", "title", "subtitle", "valid_for_s", "icon_color", "pulse",
+                          "pulse_period_ms", "pulse_min", "pulse_max"});
   this->register_service(&DisplayFramework::set_notification, "set_notification", {"enabled", "icon"});
 
   if (this->update_interval_ms_ > 0) {
@@ -129,7 +130,8 @@ void DisplayFramework::set_notification(bool enabled, std::string icon) {
 }
 
 void DisplayFramework::set_header(bool active, std::string icon, std::string title, std::string subtitle,
-                                  int32_t valid_for_s) {
+                                  int32_t valid_for_s, std::string icon_color, bool pulse,
+                                  int32_t pulse_period_ms, float pulse_min, float pulse_max) {
   uint32_t expiry = 0;
   if (valid_for_s > 0 && this->clock_ != nullptr) {
     auto now = this->clock_->now();
@@ -151,6 +153,22 @@ void DisplayFramework::set_header(bool active, std::string icon, std::string tit
   this->header_.title = title;
   this->header_.subtitle = subtitle;
   this->header_.expiry_ts = expiry;
+  this->header_.pulse_enabled = pulse;
+  this->header_.pulse_period_ms = pulse_period_ms > 0 ? static_cast<uint32_t>(pulse_period_ms) : 1200;
+  this->header_.pulse_min = pulse_min;
+  this->header_.pulse_max = pulse_max;
+  if (this->header_.pulse_min < 0.0f) this->header_.pulse_min = 0.0f;
+  if (this->header_.pulse_max < 0.0f) this->header_.pulse_max = 0.0f;
+  if (this->header_.pulse_min > 1.0f) this->header_.pulse_min = 1.0f;
+  if (this->header_.pulse_max > 1.0f) this->header_.pulse_max = 1.0f;
+
+  Color parsed_color{};
+  if (!icon_color.empty() && this->parse_hex_color_(icon_color, parsed_color)) {
+    this->header_.icon_color_set = true;
+    this->header_.icon_color = parsed_color;
+  } else {
+    this->header_.icon_color_set = false;
+  }
   this->request_update_();
 }
 
@@ -387,12 +405,14 @@ void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Col
   const int header_y = 28;
   const int icon_x = width - 52;
   const int icon_y = 18;
-  Color header_icon_color = this->header_icon_color_enabled_ ? this->header_icon_color_ : accent_color;
-  if (this->header_pulse_) {
-    header_icon_color = this->apply_pulse_(header_icon_color);
+  bool header_active = this->header_.active && !this->is_header_expired_(now_ts);
+  Color header_icon_color = header_active && this->header_.icon_color_set ? this->header_.icon_color : accent_color;
+  if (header_active && this->header_.pulse_enabled) {
+    header_icon_color = this->apply_pulse_(
+        header_icon_color, this->header_.pulse_period_ms, this->header_.pulse_min, this->header_.pulse_max);
   }
 
-  if (this->header_.active && !this->is_header_expired_(now_ts)) {
+  if (header_active) {
     if (!this->header_.title.empty()) {
       it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
                 this->header_.title.c_str());
@@ -492,16 +512,51 @@ void DisplayFramework::draw_wifi_bars_(display::Display &it, int x, int y, int l
   }
 }
 
-Color DisplayFramework::apply_pulse_(Color color) const {
-  if (!this->header_pulse_ || this->header_pulse_period_ms_ == 0) {
+bool DisplayFramework::parse_hex_color_(const std::string &value, Color &out) const {
+  std::string hex = value;
+  if (hex.empty()) {
+    return false;
+  }
+  if (hex[0] == '#') {
+    hex.erase(0, 1);
+  }
+  if (hex.size() != 6) {
+    return false;
+  }
+
+  auto hex_to_int = [](char c) -> int {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+    if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
+    return -1;
+  };
+
+  int r1 = hex_to_int(hex[0]);
+  int r2 = hex_to_int(hex[1]);
+  int g1 = hex_to_int(hex[2]);
+  int g2 = hex_to_int(hex[3]);
+  int b1 = hex_to_int(hex[4]);
+  int b2 = hex_to_int(hex[5]);
+  if (r1 < 0 || r2 < 0 || g1 < 0 || g2 < 0 || b1 < 0 || b2 < 0) {
+    return false;
+  }
+
+  uint8_t r = static_cast<uint8_t>((r1 << 4) | r2);
+  uint8_t g = static_cast<uint8_t>((g1 << 4) | g2);
+  uint8_t b = static_cast<uint8_t>((b1 << 4) | b2);
+  out = Color(r, g, b);
+  return true;
+}
+
+Color DisplayFramework::apply_pulse_(Color color, uint32_t period_ms, float min_value, float max_value) const {
+  if (period_ms == 0) {
     return color;
   }
 
-  float t = static_cast<float>(millis() % this->header_pulse_period_ms_) /
-            static_cast<float>(this->header_pulse_period_ms_);
-  float wave = 0.5f * (1.0f + std::sinf(t * 6.2831853f));
-  float min_v = std::min(this->header_pulse_min_, this->header_pulse_max_);
-  float max_v = std::max(this->header_pulse_min_, this->header_pulse_max_);
+  float t = static_cast<float>(millis() % period_ms) / static_cast<float>(period_ms);
+  float wave = 0.5f * (1.0f + std::sin(t * 6.2831853f));
+  float min_v = std::min(min_value, max_value);
+  float max_v = std::max(min_value, max_value);
   float scale = min_v + (max_v - min_v) * wave;
 
   return this->apply_brightness_(color, scale);
