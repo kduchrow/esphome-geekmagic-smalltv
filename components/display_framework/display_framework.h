@@ -37,6 +37,12 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_title_color(Color color) { this->title_color_ = color; }
   void set_subtitle_color(Color color) { this->subtitle_color_ = color; }
   void set_detail_color(Color color) { this->detail_color_ = color; }
+  void set_header_icon_color(Color color) { this->header_icon_color_ = color; }
+  void set_header_icon_color_enabled(bool enabled) { this->header_icon_color_enabled_ = enabled; }
+  void set_header_pulse(bool enabled) { this->header_pulse_ = enabled; }
+  void set_header_pulse_period_ms(uint32_t ms) { this->header_pulse_period_ms_ = ms; }
+  void set_header_pulse_min(float value) { this->header_pulse_min_ = value; }
+  void set_header_pulse_max(float value) { this->header_pulse_max_ = value; }
   void set_footer_left(int mode) { this->footer_left_ = mode; }
   void set_footer_right(int mode) { this->footer_right_ = mode; }
 
@@ -86,6 +92,8 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void render_footer_(display::Display &it, Color accent_color);
   int wifi_level_from_rssi_(float rssi) const;
   void draw_wifi_bars_(display::Display &it, int x, int y, int level, Color color);
+  Color apply_pulse_(Color color) const;
+  Color apply_brightness_(Color color, float scale) const;
   Color accent_color_() const;
   const char *map_weather_icon_(const std::string &state) const;
   std::string resolve_icon_glyph_(const std::string &icon_name) const;
@@ -114,6 +122,12 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   Color title_color_{Color(0xEB, 0x1C, 0x24)};
   Color subtitle_color_{Color(0xFC, 0xB7, 0x12)};
   Color detail_color_{Color(0xFC, 0xB7, 0x12)};
+  Color header_icon_color_{Color(0xFC, 0xB7, 0x12)};
+  bool header_icon_color_enabled_{false};
+  bool header_pulse_{false};
+  uint32_t header_pulse_period_ms_{1200};
+  float header_pulse_min_{0.4f};
+  float header_pulse_max_{1.0f};
   int footer_left_{FOOTER_IP};
   int footer_right_{FOOTER_WIFI};
 

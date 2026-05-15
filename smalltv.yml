@@ -42,6 +42,7 @@ wifi:
   id: default_wifi
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  min_auth_mode: WPA2
   ap:
     ssid: !secret ap_ssid
     password: !secret ap_password
@@ -158,3 +159,8 @@ display_framework:
   show_weather: false
   wifi_signal: wifi_signal_db
   wifi_ip: wifi_ip_address
+  header_icon_color: "fcb712"
+  header_pulse: true
+  header_pulse_period: 1200ms
+  header_pulse_min: 0.4
+  header_pulse_max: 1.0

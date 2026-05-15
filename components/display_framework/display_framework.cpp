@@ -1,5 +1,8 @@
 #include "display_framework.h"
 
+#include <cmath>
+
+#include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
 namespace esphome {
@@ -384,6 +387,10 @@ void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Col
   const int header_y = 28;
   const int icon_x = width - 52;
   const int icon_y = 18;
+  Color header_icon_color = this->header_icon_color_enabled_ ? this->header_icon_color_ : accent_color;
+  if (this->header_pulse_) {
+    header_icon_color = this->apply_pulse_(header_icon_color);
+  }
 
   if (this->header_.active && !this->is_header_expired_(now_ts)) {
     if (!this->header_.title.empty()) {
@@ -396,7 +403,8 @@ void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Col
     }
     std::string icon = this->resolve_icon_glyph_(this->header_.icon);
     if (!icon.empty()) {
-      it.printf(icon_x, icon_y, this->icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s", icon.c_str());
+      it.printf(icon_x, icon_y, this->icon_font_, header_icon_color, display::TextAlign::TOP_LEFT, "%s",
+                icon.c_str());
     }
     return;
   }
@@ -408,7 +416,7 @@ void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Col
     if (this->weather_state_ != nullptr && this->weather_state_->has_state()) {
       icon = this->map_weather_icon_(this->weather_state_->state);
     }
-    it.printf(icon_x, icon_y, this->icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s", icon);
+    it.printf(icon_x, icon_y, this->icon_font_, header_icon_color, display::TextAlign::TOP_LEFT, "%s", icon);
 
     std::string weather_label = "unavailable";
     if (this->weather_state_ != nullptr && this->weather_state_->has_state()) {
@@ -482,6 +490,29 @@ void DisplayFramework::draw_wifi_bars_(display::Display &it, int x, int y, int l
       it.rectangle(bar_x, bar_y, bar_width, bar_height, color);
     }
   }
+}
+
+Color DisplayFramework::apply_pulse_(Color color) const {
+  if (!this->header_pulse_ || this->header_pulse_period_ms_ == 0) {
+    return color;
+  }
+
+  float t = static_cast<float>(millis() % this->header_pulse_period_ms_) /
+            static_cast<float>(this->header_pulse_period_ms_);
+  float wave = 0.5f * (1.0f + std::sinf(t * 6.2831853f));
+  float min_v = std::min(this->header_pulse_min_, this->header_pulse_max_);
+  float max_v = std::max(this->header_pulse_min_, this->header_pulse_max_);
+  float scale = min_v + (max_v - min_v) * wave;
+
+  return this->apply_brightness_(color, scale);
+}
+
+Color DisplayFramework::apply_brightness_(Color color, float scale) const {
+  scale = std::max(0.0f, std::min(1.0f, scale));
+  uint8_t r = static_cast<uint8_t>(color.red * scale);
+  uint8_t g = static_cast<uint8_t>(color.green * scale);
+  uint8_t b = static_cast<uint8_t>(color.blue * scale);
+  return Color(r, g, b);
 }
 
 Color DisplayFramework::accent_color_() const {

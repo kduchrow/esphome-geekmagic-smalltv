@@ -25,6 +25,11 @@ CONF_BACKGROUND_COLOR = "background_color"
 CONF_TITLE_COLOR = "title_color"
 CONF_SUBTITLE_COLOR = "subtitle_color"
 CONF_DETAIL_COLOR = "detail_color"
+CONF_HEADER_ICON_COLOR = "header_icon_color"
+CONF_HEADER_PULSE = "header_pulse"
+CONF_HEADER_PULSE_PERIOD = "header_pulse_period"
+CONF_HEADER_PULSE_MIN = "header_pulse_min"
+CONF_HEADER_PULSE_MAX = "header_pulse_max"
 
 DEPENDENCIES = ["api", "display", "time"]
 AUTO_LOAD = ["font", "sensor", "text_sensor"]
@@ -59,6 +64,11 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_TITLE_COLOR, default="eb1c24"): color_comp.hex_color,
             cv.Optional(CONF_SUBTITLE_COLOR, default="fcb712"): color_comp.hex_color,
             cv.Optional(CONF_DETAIL_COLOR, default="fcb712"): color_comp.hex_color,
+            cv.Optional(CONF_HEADER_ICON_COLOR): color_comp.hex_color,
+            cv.Optional(CONF_HEADER_PULSE, default=False): cv.boolean,
+            cv.Optional(CONF_HEADER_PULSE_PERIOD, default="1200ms"): cv.positive_time_period_milliseconds,
+            cv.Optional(CONF_HEADER_PULSE_MIN, default=0.4): cv.float_range(min=0.0, max=1.0),
+            cv.Optional(CONF_HEADER_PULSE_MAX, default=1.0): cv.float_range(min=0.0, max=1.0),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -96,6 +106,14 @@ async def to_code(config):
     cg.add(var.set_title_color(as_color(config[CONF_TITLE_COLOR])))
     cg.add(var.set_subtitle_color(as_color(config[CONF_SUBTITLE_COLOR])))
     cg.add(var.set_detail_color(as_color(config[CONF_DETAIL_COLOR])))
+    if CONF_HEADER_ICON_COLOR in config:
+        cg.add(var.set_header_icon_color(as_color(config[CONF_HEADER_ICON_COLOR])))
+        cg.add(var.set_header_icon_color_enabled(True))
+
+    cg.add(var.set_header_pulse(config[CONF_HEADER_PULSE]))
+    cg.add(var.set_header_pulse_period_ms(config[CONF_HEADER_PULSE_PERIOD].total_milliseconds))
+    cg.add(var.set_header_pulse_min(config[CONF_HEADER_PULSE_MIN]))
+    cg.add(var.set_header_pulse_max(config[CONF_HEADER_PULSE_MAX]))
 
     if CONF_WEATHER_STATE in config:
         weather_state = await cg.get_variable(config[CONF_WEATHER_STATE])

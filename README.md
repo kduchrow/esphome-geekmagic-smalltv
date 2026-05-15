@@ -58,3 +58,4 @@ See the `examples/` folder for complete configurations and Home Assistant automa
 - Default delimiter is `-|-` and up to four detail lines are rendered.
 - Fonts and colors can be overridden via the component configuration.
 - Footer defaults to IP on the left and WiFi strength on the right when `wifi_ip` and `wifi_signal` are configured.
+- Header icon can pulse when `header_pulse` is enabled; use `header_icon_color` and pulse settings to customize.

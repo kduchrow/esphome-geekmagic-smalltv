@@ -33,6 +33,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  min_auth_mode: WPA2
 
 captive_portal:
 
@@ -127,3 +128,7 @@ display_framework:
   sun_elevation: ha_sun_elevation
   wifi_signal: wifi_signal_db
   wifi_ip: wifi_ip_address
+  header_pulse: true
+  header_pulse_period: 1200ms
+  header_pulse_min: 0.4
+  header_pulse_max: 1.0
