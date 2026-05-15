@@ -33,7 +33,7 @@ CONFIG_SCHEMA = (
     cv.Schema(
         {
             cv.Required(CONF_ID): cv.declare_id(DisplayFramework),
-            cv.Required(CONF_DISPLAY_ID): cv.use_id(display.DisplayBuffer),
+            cv.Required(CONF_DISPLAY_ID): cv.use_id(display.Display),
             cv.Required(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
             cv.Optional(CONF_TEXT_FONT, default="text_font_14"): cv.use_id(font.Font),
             cv.Optional(CONF_ICON_FONT, default="icon_font_48"): cv.use_id(font.Font),

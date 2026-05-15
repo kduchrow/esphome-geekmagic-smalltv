@@ -6,7 +6,6 @@
 #include "esphome/core/component.h"
 #include "esphome/core/color.h"
 #include "esphome/components/display/display.h"
-#include "esphome/components/display/display_buffer.h"
 #include "esphome/components/font/font.h"
 #include "esphome/components/api/custom_api_device.h"
 #include "esphome/components/time/real_time_clock.h"
@@ -18,7 +17,7 @@ namespace display_framework {
 
 class DisplayFramework : public Component, public api::CustomAPIDevice {
  public:
-  void set_display(display::DisplayBuffer *display) { this->display_ = display; }
+  void set_display(display::Display *display) { this->display_ = display; }
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }
   void set_text_font(font::Font *font) { this->text_font_ = font; }
   void set_icon_font(font::Font *font) { this->icon_font_ = font; }
@@ -44,7 +43,8 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void setup() override;
   void dump_config() override;
 
-  void render(display::DisplayBuffer &it);
+  void render(display::Display &it);
+  void set_update_interval(uint32_t ms) { this->set_update_interval_ms(ms); }
 
  protected:
   struct PageSlot {
@@ -70,7 +70,7 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void split_details_(const std::string &details, std::vector<std::string> &out) const;
   void request_update_();
 
-  display::DisplayBuffer *display_{nullptr};
+  display::Display *display_{nullptr};
   time::RealTimeClock *clock_{nullptr};
   font::Font *text_font_{nullptr};
   font::Font *icon_font_{nullptr};

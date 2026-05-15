@@ -124,7 +124,7 @@ void DisplayFramework::set_notification(bool enabled, const std::string &icon) {
   this->request_update_();
 }
 
-void DisplayFramework::render(display::DisplayBuffer &it) {
+void DisplayFramework::render(display::Display &it) {
   if (this->text_font_ == nullptr || this->icon_font_ == nullptr) {
     ESP_LOGW(TAG, "render skipped: fonts not configured");
     return;
