@@ -43,7 +43,7 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_header_rotation_interval_ms(uint32_t ms) { this->header_rotation_interval_ms_ = ms; }
 
   void set_page(std::string page_id, bool active, std::string icon, std::string title, std::string subtitle,
-                std::string details, int32_t valid_for_s);
+                std::string details, int32_t valid_for_s, int32_t progress);
   void set_header(bool active, std::string icon, std::string title, std::string subtitle, int32_t valid_for_s,
                   std::string icon_color, bool pulse, int32_t pulse_period_ms, float pulse_min, float pulse_max);
   void set_notification(bool enabled, std::string icon);
@@ -66,6 +66,7 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
     std::string title;
     std::string subtitle;
     std::string details;
+    int progress{-1};
     uint32_t expiry_ts{0};
   };
 
@@ -97,6 +98,7 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void render_footer_(display::Display &it, Color accent_color);
   int wifi_level_from_rssi_(float rssi) const;
   void draw_wifi_bars_(display::Display &it, int x, int y, int level, Color color);
+  void draw_progress_bar_(display::Display &it, int x, int y, int width, int height, int progress, Color color);
   bool parse_hex_color_(const std::string &value, Color &out) const;
   Color apply_pulse_(Color color, uint32_t period_ms, float min_value, float max_value) const;
   Color apply_brightness_(Color color, float scale) const;

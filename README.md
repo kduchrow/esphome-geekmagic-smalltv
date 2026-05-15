@@ -55,7 +55,7 @@ display_framework:
 
 - `set_page`
   - `page_id` (string), `active` (bool), `icon` (string), `title` (string), `subtitle` (string),
-    `details` (string), `valid_for_s` (int, 0 = no expiry)
+    `details` (string), `valid_for_s` (int, 0 = no expiry), `progress` (int, 1-100, optional)
 - `set_header`
   - `active` (bool), `icon` (string), `title` (string), `subtitle` (string), `valid_for_s` (int, 0 = no expiry),
     `icon_color` (hex string), `pulse` (bool), `pulse_period_ms` (int), `pulse_min` (float), `pulse_max` (float)
@@ -74,3 +74,4 @@ See the `examples/` folder for complete configurations and Home Assistant automa
 - Header icon can pulse when `pulse` is enabled in the `set_header` service call.
 - For smoother header pulse animation, lower `update_interval` (for example `200ms`).
 - Multiple header messages are queued (default 3) and rotated every 5 seconds.
+- `set_page` can draw a progress bar (140x10) after the details lines when `progress` is set (> 0).

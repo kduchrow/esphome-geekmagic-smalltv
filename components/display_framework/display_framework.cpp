@@ -19,7 +19,7 @@ void DisplayFramework::setup() {
   this->register_service(
       &DisplayFramework::set_page,
       "set_page",
-      {"page_id", "active", "icon", "title", "subtitle", "details", "valid_for_s"});
+      {"page_id", "active", "icon", "title", "subtitle", "details", "valid_for_s", "progress"});
   this->register_service(&DisplayFramework::set_header, "set_header",
                          {"active", "icon", "title", "subtitle", "valid_for_s", "icon_color", "pulse",
                           "pulse_period_ms", "pulse_min", "pulse_max"});
@@ -77,7 +77,7 @@ void DisplayFramework::dump_config() {
 }
 
 void DisplayFramework::set_page(std::string page_id, bool active, std::string icon, std::string title,
-                                std::string subtitle, std::string details, int32_t valid_for_s) {
+                                std::string subtitle, std::string details, int32_t valid_for_s, int32_t progress) {
   if (page_id.empty()) {
     ESP_LOGW(TAG, "set_page ignored: empty page_id");
     return;
@@ -102,6 +102,12 @@ void DisplayFramework::set_page(std::string page_id, bool active, std::string ic
       ESP_LOGW(TAG, "set_page remove requested but page not found: '%s'", page_id.c_str());
     }
   } else {
+    int normalized_progress = progress;
+    if (normalized_progress <= 0) {
+      normalized_progress = -1;
+    } else if (normalized_progress > 100) {
+      normalized_progress = 100;
+    }
     if (index >= 0) {
       ESP_LOGI(TAG, "set_page updating '%s' in slot %d", page_id.c_str(), index);
       auto &slot = this->slots_[index];
@@ -110,6 +116,7 @@ void DisplayFramework::set_page(std::string page_id, bool active, std::string ic
       slot.title = title;
       slot.subtitle = subtitle;
       slot.details = details;
+      slot.progress = normalized_progress;
       slot.expiry_ts = expiry;
     } else {
       int insert_index = -1;
@@ -132,6 +139,7 @@ void DisplayFramework::set_page(std::string page_id, bool active, std::string ic
       slot.title = title;
       slot.subtitle = subtitle;
       slot.details = details;
+      slot.progress = normalized_progress;
       slot.expiry_ts = expiry;
     }
   }
@@ -303,6 +311,13 @@ void DisplayFramework::render(display::Display &it) {
     for (size_t i = 0; i < lines.size(); i++) {
       it.printf(text_x, page_y + 2 + (line_height * (2 + static_cast<int>(i))), this->text_font_, this->detail_color_,
                 display::TextAlign::TOP_LEFT, "%s", lines[i].c_str());
+    }
+    if (slot.progress > 0) {
+      const int bar_width = 140;
+      const int bar_height = 10;
+      const int bar_x = text_x;
+      const int bar_y = page_y + 2 + (line_height * (2 + static_cast<int>(lines.size())));
+      this->draw_progress_bar_(it, bar_x, bar_y, bar_width, bar_height, slot.progress, accent_color);
     }
   } else {
     it.printf(text_x, page_y + 2, this->text_font_, this->detail_color_, display::TextAlign::TOP_LEFT, "NO PAGES");
@@ -588,6 +603,25 @@ void DisplayFramework::draw_wifi_bars_(display::Display &it, int x, int y, int l
       it.filled_rectangle(bar_x, bar_y, bar_width, bar_height, color);
     } else {
       it.rectangle(bar_x, bar_y, bar_width, bar_height, color);
+    }
+  }
+}
+
+void DisplayFramework::draw_progress_bar_(display::Display &it, int x, int y, int width, int height, int progress,
+                                          Color color) {
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+  int clamped = progress;
+  if (clamped < 0) clamped = 0;
+  if (clamped > 100) clamped = 100;
+
+  it.rectangle(x, y, width, height, color);
+  if (clamped > 0) {
+    int fill_width = (width * clamped) / 100;
+    int inner_width = fill_width - 2;
+    if (inner_width > 0 && height > 2) {
+      it.filled_rectangle(x + 1, y + 1, inner_width, height - 2, color);
     }
   }
 }
