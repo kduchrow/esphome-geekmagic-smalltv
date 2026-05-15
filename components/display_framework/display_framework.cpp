@@ -51,9 +51,8 @@ void DisplayFramework::dump_config() {
   }
 }
 
-void DisplayFramework::set_page(const std::string &page_id, bool active, const std::string &icon,
-                                const std::string &title, const std::string &subtitle, const std::string &details,
-                                int32_t valid_for_s) {
+void DisplayFramework::set_page(std::string page_id, bool active, std::string icon, std::string title,
+                                std::string subtitle, std::string details, int32_t valid_for_s) {
   if (page_id.empty()) {
     ESP_LOGW(TAG, "set_page ignored: empty page_id");
     return;
@@ -116,7 +115,7 @@ void DisplayFramework::set_page(const std::string &page_id, bool active, const s
   this->request_update_();
 }
 
-void DisplayFramework::set_notification(bool enabled, const std::string &icon) {
+void DisplayFramework::set_notification(bool enabled, std::string icon) {
   this->notification_enabled_ = enabled;
   if (!icon.empty()) {
     this->notification_icon_ = icon;

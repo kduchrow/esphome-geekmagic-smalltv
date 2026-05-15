@@ -36,9 +36,9 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_subtitle_color(Color color) { this->subtitle_color_ = color; }
   void set_detail_color(Color color) { this->detail_color_ = color; }
 
-  void set_page(const std::string &page_id, bool active, const std::string &icon, const std::string &title,
-                const std::string &subtitle, const std::string &details, int32_t valid_for_s);
-  void set_notification(bool enabled, const std::string &icon);
+  void set_page(std::string page_id, bool active, std::string icon, std::string title, std::string subtitle,
+                std::string details, int32_t valid_for_s);
+  void set_notification(bool enabled, std::string icon);
 
   void setup() override;
   void dump_config() override;
