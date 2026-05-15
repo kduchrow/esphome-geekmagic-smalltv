@@ -134,7 +134,7 @@ void DisplayFramework::render(display::DisplayBuffer &it) {
   const int height = it.get_height();
   it.fill(this->background_);
 
-  auto now = this->clock_ != nullptr ? this->clock_->now() : time::ESPTime();
+  auto now = this->clock_ != nullptr ? this->clock_->now() : ESPTime();
   bool time_valid = this->clock_ != nullptr && now.is_valid();
 
   Color accent_color = this->accent_color_();
