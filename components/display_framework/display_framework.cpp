@@ -15,6 +15,8 @@ void DisplayFramework::setup() {
       &DisplayFramework::set_page,
       "set_page",
       {"page_id", "active", "icon", "title", "subtitle", "details", "valid_for_s"});
+  this->register_service(&DisplayFramework::set_header, "set_header",
+                         {"active", "icon", "title", "subtitle", "valid_for_s"});
   this->register_service(&DisplayFramework::set_notification, "set_notification", {"enabled", "icon"});
 
   if (this->update_interval_ms_ > 0) {
@@ -123,6 +125,32 @@ void DisplayFramework::set_notification(bool enabled, std::string icon) {
   this->request_update_();
 }
 
+void DisplayFramework::set_header(bool active, std::string icon, std::string title, std::string subtitle,
+                                  int32_t valid_for_s) {
+  uint32_t expiry = 0;
+  if (valid_for_s > 0 && this->clock_ != nullptr) {
+    auto now = this->clock_->now();
+    if (now.is_valid()) {
+      expiry = now.timestamp + static_cast<uint32_t>(valid_for_s);
+    } else {
+      ESP_LOGW(TAG, "set_header: time not valid, expiry disabled");
+    }
+  }
+
+  if (!active) {
+    this->header_ = HeaderSlot{};
+    this->request_update_();
+    return;
+  }
+
+  this->header_.active = true;
+  this->header_.icon = icon;
+  this->header_.title = title;
+  this->header_.subtitle = subtitle;
+  this->header_.expiry_ts = expiry;
+  this->request_update_();
+}
+
 void DisplayFramework::render(display::Display &it) {
   if (this->text_font_ == nullptr || this->icon_font_ == nullptr) {
     ESP_LOGW(TAG, "render skipped: fonts not configured");
@@ -176,25 +204,7 @@ void DisplayFramework::render(display::Display &it) {
     }
   }
 
-  if (this->show_weather_) {
-    int y = 28;
-    it.printf(4, y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "WEATHER");
-
-    const int icon_x = width - 52;
-    const int icon_y = 18;
-    const char *icon = "\U000F0599";
-    if (this->weather_state_ != nullptr && this->weather_state_->has_state()) {
-      icon = this->map_weather_icon_(this->weather_state_->state);
-    }
-    it.printf(icon_x, icon_y, this->icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s", icon);
-    y += 16;
-
-    std::string weather_label = "unavailable";
-    if (this->weather_state_ != nullptr && this->weather_state_->has_state()) {
-      weather_label = this->weather_state_->state;
-    }
-    it.printf(4, y, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "%s", weather_label.c_str());
-  }
+  this->render_header_(it, now_ts, accent_color);
 
   it.filled_rectangle(4, 66, width - 8, 1, accent_color);
 
@@ -249,10 +259,16 @@ void DisplayFramework::render(display::Display &it) {
   } else {
     it.printf(text_x, page_y + 2, this->text_font_, this->detail_color_, display::TextAlign::TOP_LEFT, "NO PAGES");
   }
+
+  this->render_footer_(it, accent_color);
 }
 
 bool DisplayFramework::is_expired_(const PageSlot &slot, uint32_t now_ts) const {
   return slot.active && slot.expiry_ts > 0 && now_ts > 0 && now_ts >= slot.expiry_ts;
+}
+
+bool DisplayFramework::is_header_expired_(uint32_t now_ts) const {
+  return this->header_.active && this->header_.expiry_ts > 0 && now_ts > 0 && now_ts >= this->header_.expiry_ts;
 }
 
 int DisplayFramework::find_index_(const std::string &page_id) const {
@@ -360,6 +376,111 @@ void DisplayFramework::refresh_current_page_() {
       }
     }
     this->current_page_index_ = (next >= 0) ? next : 0;
+  }
+}
+
+void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Color accent_color) {
+  const int width = it.get_width();
+  const int header_y = 28;
+  const int icon_x = width - 52;
+  const int icon_y = 18;
+
+  if (this->header_.active && !this->is_header_expired_(now_ts)) {
+    if (!this->header_.title.empty()) {
+      it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
+                this->header_.title.c_str());
+    }
+    if (!this->header_.subtitle.empty()) {
+      it.printf(4, header_y + 16, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "%s",
+                this->header_.subtitle.c_str());
+    }
+    std::string icon = this->resolve_icon_glyph_(this->header_.icon);
+    if (!icon.empty()) {
+      it.printf(icon_x, icon_y, this->icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s", icon.c_str());
+    }
+    return;
+  }
+
+  if (this->show_weather_) {
+    it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "WEATHER");
+
+    const char *icon = "\U000F0599";
+    if (this->weather_state_ != nullptr && this->weather_state_->has_state()) {
+      icon = this->map_weather_icon_(this->weather_state_->state);
+    }
+    it.printf(icon_x, icon_y, this->icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s", icon);
+
+    std::string weather_label = "unavailable";
+    if (this->weather_state_ != nullptr && this->weather_state_->has_state()) {
+      weather_label = this->weather_state_->state;
+    }
+    it.printf(4, header_y + 16, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "%s",
+              weather_label.c_str());
+    return;
+  }
+
+  it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "HAPPY DAY");
+  it.printf(4, header_y + 16, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, ":)");
+}
+
+void DisplayFramework::render_footer_(display::Display &it, Color accent_color) {
+  const int width = it.get_width();
+  const int height = it.get_height();
+  const int footer_y = height - 22;
+
+  if (this->footer_left_ == FOOTER_IP) {
+    std::string ip_label = "IP --";
+    if (this->wifi_ip_ != nullptr && this->wifi_ip_->has_state()) {
+      ip_label = "IP " + this->wifi_ip_->state;
+    }
+    it.printf(4, footer_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
+              ip_label.c_str());
+  }
+
+  if (this->footer_right_ == FOOTER_WIFI) {
+    int bars_x = width - 4 - 18;
+    int bars_y = footer_y + 2;
+    int level = 0;
+    int rssi = 0;
+    bool has_rssi = false;
+    if (this->wifi_signal_ != nullptr && this->wifi_signal_->has_state()) {
+      rssi = static_cast<int>(this->wifi_signal_->state);
+      level = this->wifi_level_from_rssi_(this->wifi_signal_->state);
+      has_rssi = true;
+    }
+    this->draw_wifi_bars_(it, bars_x, bars_y, level, accent_color);
+
+    if (has_rssi) {
+      it.printf(bars_x - 4, footer_y, this->text_font_, this->title_color_, display::TextAlign::TOP_RIGHT, "RSSI %d",
+                rssi);
+    } else {
+      it.printf(bars_x - 4, footer_y, this->text_font_, this->title_color_, display::TextAlign::TOP_RIGHT, "RSSI --");
+    }
+  }
+}
+
+int DisplayFramework::wifi_level_from_rssi_(float rssi) const {
+  if (rssi >= -55.0f) return 4;
+  if (rssi >= -67.0f) return 3;
+  if (rssi >= -80.0f) return 2;
+  if (rssi >= -90.0f) return 1;
+  return 0;
+}
+
+void DisplayFramework::draw_wifi_bars_(display::Display &it, int x, int y, int level, Color color) {
+  const int bar_width = 3;
+  const int bar_gap = 2;
+  const int max_height = 8;
+
+  for (int i = 0; i < 4; i++) {
+    int bar_height = 2 + (i * 2);
+    int bar_x = x + (i * (bar_width + bar_gap));
+    int bar_y = y + (max_height - bar_height);
+    if (level >= (i + 1)) {
+      it.filled_rectangle(bar_x, bar_y, bar_width, bar_height, color);
+    } else {
+      it.rectangle(bar_x, bar_y, bar_width, bar_height, color);
+    }
   }
 }
 

@@ -36,7 +36,7 @@ external_components:
 pages:
   - id: framework
     lambda: |-
-      id(display_framework).render(it);
+      id(dfw).render(it);
 ```
 
 ## Services
@@ -44,6 +44,8 @@ pages:
 - `set_page`
   - `page_id` (string), `active` (bool), `icon` (string), `title` (string), `subtitle` (string),
     `details` (string), `valid_for_s` (int, 0 = no expiry)
+- `set_header`
+  - `active` (bool), `icon` (string), `title` (string), `subtitle` (string), `valid_for_s` (int, 0 = no expiry)
 - `set_notification`
   - `enabled` (bool), `icon` (string)
 
@@ -55,3 +57,4 @@ See the `examples/` folder for complete configurations and Home Assistant automa
 
 - Default delimiter is `-|-` and up to four detail lines are rendered.
 - Fonts and colors can be overridden via the component configuration.
+- Footer defaults to IP on the left and WiFi strength on the right when `wifi_ip` and `wifi_signal` are configured.

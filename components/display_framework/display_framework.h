@@ -23,6 +23,8 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_icon_font(font::Font *font) { this->icon_font_ = font; }
   void set_weather_state(text_sensor::TextSensor *sensor) { this->weather_state_ = sensor; }
   void set_sun_elevation(sensor::Sensor *sensor) { this->sun_elevation_ = sensor; }
+  void set_wifi_ip(text_sensor::TextSensor *sensor) { this->wifi_ip_ = sensor; }
+  void set_wifi_signal(sensor::Sensor *sensor) { this->wifi_signal_ = sensor; }
   void set_max_pages(int max_pages) { this->max_pages_ = max_pages; }
   void set_delimiter(const std::string &delimiter) { this->delimiter_ = delimiter; }
   void set_rotation_interval_ms(uint32_t ms) { this->rotation_interval_ms_ = ms; }
@@ -35,9 +37,12 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_title_color(Color color) { this->title_color_ = color; }
   void set_subtitle_color(Color color) { this->subtitle_color_ = color; }
   void set_detail_color(Color color) { this->detail_color_ = color; }
+  void set_footer_left(int mode) { this->footer_left_ = mode; }
+  void set_footer_right(int mode) { this->footer_right_ = mode; }
 
   void set_page(std::string page_id, bool active, std::string icon, std::string title, std::string subtitle,
                 std::string details, int32_t valid_for_s);
+  void set_header(bool active, std::string icon, std::string title, std::string subtitle, int32_t valid_for_s);
   void set_notification(bool enabled, std::string icon);
 
   void setup() override;
@@ -47,6 +52,10 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_update_interval(uint32_t ms) { this->set_update_interval_ms(ms); }
 
  protected:
+  static constexpr int FOOTER_NONE = 0;
+  static constexpr int FOOTER_IP = 1;
+  static constexpr int FOOTER_WIFI = 2;
+
   struct PageSlot {
     std::string id;
     bool active{false};
@@ -57,13 +66,26 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
     uint32_t expiry_ts{0};
   };
 
+  struct HeaderSlot {
+    bool active{false};
+    std::string icon;
+    std::string title;
+    std::string subtitle;
+    uint32_t expiry_ts{0};
+  };
+
   bool is_expired_(const PageSlot &slot, uint32_t now_ts) const;
+  bool is_header_expired_(uint32_t now_ts) const;
   int find_index_(const std::string &page_id) const;
   void clear_slot_(int index);
   void shift_left_from_(int index);
   void rotate_page_();
   bool expire_pages_();
   void refresh_current_page_();
+  void render_header_(display::Display &it, uint32_t now_ts, Color accent_color);
+  void render_footer_(display::Display &it, Color accent_color);
+  int wifi_level_from_rssi_(float rssi) const;
+  void draw_wifi_bars_(display::Display &it, int x, int y, int level, Color color);
   Color accent_color_() const;
   const char *map_weather_icon_(const std::string &state) const;
   std::string resolve_icon_glyph_(const std::string &icon_name) const;
@@ -76,6 +98,8 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   font::Font *icon_font_{nullptr};
   text_sensor::TextSensor *weather_state_{nullptr};
   sensor::Sensor *sun_elevation_{nullptr};
+  text_sensor::TextSensor *wifi_ip_{nullptr};
+  sensor::Sensor *wifi_signal_{nullptr};
 
   int max_pages_{5};
   std::string delimiter_{"-|-"};
@@ -90,8 +114,11 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   Color title_color_{Color(0xEB, 0x1C, 0x24)};
   Color subtitle_color_{Color(0xFC, 0xB7, 0x12)};
   Color detail_color_{Color(0xFC, 0xB7, 0x12)};
+  int footer_left_{FOOTER_IP};
+  int footer_right_{FOOTER_WIFI};
 
   std::vector<PageSlot> slots_;
+  HeaderSlot header_{};
   int current_page_index_{0};
   bool notification_enabled_{false};
   std::string notification_icon_{"mdi:bell"};

@@ -1,4 +1,16 @@
 automation:
+  - alias: Display Header
+    trigger:
+      - platform: time_pattern
+        minutes: "/60"
+    action:
+      - service: esphome.geekmagic_smalltv_01_set_header
+        data:
+          active: true
+          icon: mdi:bell
+          title: "STATUS"
+          subtitle: "All good"
+          valid_for_s: 3600
   - alias: Display Weather Forecast
     trigger:
       - platform: time_pattern

@@ -110,6 +110,18 @@ light:
     name: "Backlight"
     restore_mode: RESTORE_AND_ON
 
+sensor:
+  - platform: wifi_signal
+    id: wifi_signal_db
+    name: WiFi Signal
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: wifi_ip_address
+      name: IP Address
+      entity_category: diagnostic
+
 display:
   - id: my_display
     platform: st7789v
@@ -130,10 +142,10 @@ display:
     pages:
       - id: framework
         lambda: |-
-          id(display_framework).render(it);
+          id(dfw).render(it);
 
 display_framework:
-  id: display_framework
+  id: dfw
   display_id: my_display
   time_id: sntp_time
   text_font: text_font_14
@@ -144,3 +156,5 @@ display_framework:
   expiry_interval: 10s
   update_interval: 1s
   show_weather: false
+  wifi_signal: wifi_signal_db
+  wifi_ip: wifi_ip_address

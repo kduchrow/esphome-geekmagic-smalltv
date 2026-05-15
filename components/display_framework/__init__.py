@@ -15,6 +15,10 @@ CONF_UPDATE_INTERVAL = "update_interval"
 CONF_SHOW_WEATHER = "show_weather"
 CONF_WEATHER_STATE = "weather_state"
 CONF_SUN_ELEVATION = "sun_elevation"
+CONF_WIFI_SIGNAL = "wifi_signal"
+CONF_WIFI_IP = "wifi_ip"
+CONF_FOOTER_LEFT = "footer_left"
+CONF_FOOTER_RIGHT = "footer_right"
 CONF_ACCENT_DAY = "accent_day"
 CONF_ACCENT_NIGHT = "accent_night"
 CONF_BACKGROUND_COLOR = "background_color"
@@ -45,6 +49,10 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_SHOW_WEATHER, default=True): cv.boolean,
             cv.Optional(CONF_WEATHER_STATE): cv.use_id(text_sensor.TextSensor),
             cv.Optional(CONF_SUN_ELEVATION): cv.use_id(sensor.Sensor),
+            cv.Optional(CONF_WIFI_SIGNAL): cv.use_id(sensor.Sensor),
+            cv.Optional(CONF_WIFI_IP): cv.use_id(text_sensor.TextSensor),
+            cv.Optional(CONF_FOOTER_LEFT, default="ip"): cv.one_of("none", "ip", "wifi", lower=True),
+            cv.Optional(CONF_FOOTER_RIGHT, default="wifi"): cv.one_of("none", "ip", "wifi", lower=True),
             cv.Optional(CONF_ACCENT_DAY, default="fcb712"): color_comp.hex_color,
             cv.Optional(CONF_ACCENT_NIGHT, default="eb1c24"): color_comp.hex_color,
             cv.Optional(CONF_BACKGROUND_COLOR, default="000000"): color_comp.hex_color,
@@ -96,4 +104,16 @@ async def to_code(config):
     if CONF_SUN_ELEVATION in config:
         sun_elevation = await cg.get_variable(config[CONF_SUN_ELEVATION])
         cg.add(var.set_sun_elevation(sun_elevation))
+
+    if CONF_WIFI_SIGNAL in config:
+        wifi_signal = await cg.get_variable(config[CONF_WIFI_SIGNAL])
+        cg.add(var.set_wifi_signal(wifi_signal))
+
+    if CONF_WIFI_IP in config:
+        wifi_ip = await cg.get_variable(config[CONF_WIFI_IP])
+        cg.add(var.set_wifi_ip(wifi_ip))
+
+    footer_map = {"none": 0, "ip": 1, "wifi": 2}
+    cg.add(var.set_footer_left(footer_map[config[CONF_FOOTER_LEFT]]))
+    cg.add(var.set_footer_right(footer_map[config[CONF_FOOTER_RIGHT]]))
 

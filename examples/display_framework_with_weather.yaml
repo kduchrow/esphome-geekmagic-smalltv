@@ -70,12 +70,20 @@ font:
       - "\U000F067F" # mdi-weather-snowy-rainy
 
 sensor:
+  - platform: wifi_signal
+    id: wifi_signal_db
+    name: WiFi Signal
   - platform: homeassistant
     id: ha_sun_elevation
     entity_id: sun.sun
     attribute: elevation
 
 text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: wifi_ip_address
+      name: IP Address
+      entity_category: diagnostic
   - platform: homeassistant
     id: ha_weather_state
     entity_id: weather.home
@@ -106,10 +114,10 @@ display:
     pages:
       - id: framework
         lambda: |-
-          id(display_framework).render(it);
+          id(dfw).render(it);
 
 display_framework:
-  id: display_framework
+  id: dfw
   display_id: my_display
   time_id: sntp_time
   text_font: text_font_14
@@ -117,3 +125,5 @@ display_framework:
   show_weather: true
   weather_state: ha_weather_state
   sun_elevation: ha_sun_elevation
+  wifi_signal: wifi_signal_db
+  wifi_ip: wifi_ip_address
