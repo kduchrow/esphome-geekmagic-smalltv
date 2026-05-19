@@ -41,9 +41,14 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_footer_right(int mode) { this->footer_right_ = mode; }
   void set_max_headers(int max_headers) { this->max_headers_ = max_headers; }
   void set_header_rotation_interval_ms(uint32_t ms) { this->header_rotation_interval_ms_ = ms; }
+  void set_show_time(bool v) { this->show_time_ = v; }
+  void set_show_default_header(bool v) { this->show_default_header_ = v; }
+  void set_default_header_title(const std::string &v) { this->default_header_title_ = v; }
+  void set_default_header_subtitle(const std::string &v) { this->default_header_subtitle_ = v; }
+  void set_text_font_large(font::Font *f) { this->text_font_large_ = f; }
 
   void set_page(std::string page_id, bool active, std::string icon, std::string title, std::string subtitle,
-                std::string details, int32_t valid_for_s, int32_t progress);
+                std::string details, int32_t valid_for_s, int32_t progress, int32_t font_size);
   void set_header(bool active, std::string icon, std::string title, std::string subtitle, int32_t valid_for_s,
                   std::string icon_color, bool pulse, int32_t pulse_period_ms, float pulse_min, float pulse_max);
   void set_notification(bool enabled, std::string icon);
@@ -67,6 +72,7 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
     std::string subtitle;
     std::string details;
     int progress{-1};
+    int font_size{0};
     uint32_t expiry_ts{0};
   };
 
@@ -94,7 +100,8 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   bool expire_headers_(uint32_t now_ts);
   void refresh_current_page_();
   void rotate_header_();
-  void render_header_(display::Display &it, uint32_t now_ts, Color accent_color);
+  bool has_active_header_() const;
+  void render_header_(display::Display &it, uint32_t now_ts, Color accent_color, int header_text_y, int header_icon_y);
   void render_footer_(display::Display &it, Color accent_color);
   int wifi_level_from_rssi_(float rssi) const;
   void draw_wifi_bars_(display::Display &it, int x, int y, int level, Color color);
@@ -125,6 +132,11 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   uint32_t update_interval_ms_{1000};
   uint32_t header_rotation_interval_ms_{5000};
   bool show_weather_{true};
+  bool show_time_{true};
+  bool show_default_header_{true};
+  std::string default_header_title_{};
+  std::string default_header_subtitle_{};
+  font::Font *text_font_large_{nullptr};
 
   Color accent_day_{Color(0xFC, 0xB7, 0x12)};
   Color accent_night_{Color(0xEB, 0x1C, 0x24)};

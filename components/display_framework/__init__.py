@@ -27,6 +27,11 @@ CONF_BACKGROUND_COLOR = "background_color"
 CONF_TITLE_COLOR = "title_color"
 CONF_SUBTITLE_COLOR = "subtitle_color"
 CONF_DETAIL_COLOR = "detail_color"
+CONF_SHOW_TIME = "show_time"
+CONF_SHOW_DEFAULT_HEADER = "show_default_header"
+CONF_DEFAULT_HEADER_TITLE = "default_header_title"
+CONF_DEFAULT_HEADER_SUBTITLE = "default_header_subtitle"
+CONF_TEXT_FONT_LARGE = "text_font_large"
 
 DEPENDENCIES = ["api", "display", "time"]
 AUTO_LOAD = ["font", "sensor", "text_sensor"]
@@ -49,6 +54,11 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_EXPIRY_INTERVAL, default="10s"): cv.positive_time_period_milliseconds,
             cv.Optional(CONF_UPDATE_INTERVAL, default="1s"): cv.positive_time_period_milliseconds,
             cv.Optional(CONF_SHOW_WEATHER, default=True): cv.boolean,
+            cv.Optional(CONF_SHOW_TIME, default=True): cv.boolean,
+            cv.Optional(CONF_SHOW_DEFAULT_HEADER, default=True): cv.boolean,
+            cv.Optional(CONF_DEFAULT_HEADER_TITLE): cv.string,
+            cv.Optional(CONF_DEFAULT_HEADER_SUBTITLE): cv.string,
+            cv.Optional(CONF_TEXT_FONT_LARGE): cv.use_id(font.Font),
             cv.Optional(CONF_WEATHER_STATE): cv.use_id(text_sensor.TextSensor),
             cv.Optional(CONF_SUN_ELEVATION): cv.use_id(sensor.Sensor),
             cv.Optional(CONF_WIFI_SIGNAL): cv.use_id(sensor.Sensor),
@@ -90,6 +100,15 @@ async def to_code(config):
     cg.add(var.set_expiry_interval_ms(config[CONF_EXPIRY_INTERVAL].total_milliseconds))
     cg.add(var.set_update_interval_ms(config[CONF_UPDATE_INTERVAL].total_milliseconds))
     cg.add(var.set_show_weather(config[CONF_SHOW_WEATHER]))
+    cg.add(var.set_show_time(config[CONF_SHOW_TIME]))
+    cg.add(var.set_show_default_header(config[CONF_SHOW_DEFAULT_HEADER]))
+    if CONF_DEFAULT_HEADER_TITLE in config:
+        cg.add(var.set_default_header_title(config[CONF_DEFAULT_HEADER_TITLE]))
+    if CONF_DEFAULT_HEADER_SUBTITLE in config:
+        cg.add(var.set_default_header_subtitle(config[CONF_DEFAULT_HEADER_SUBTITLE]))
+    if CONF_TEXT_FONT_LARGE in config:
+        text_font_large = await cg.get_variable(config[CONF_TEXT_FONT_LARGE])
+        cg.add(var.set_text_font_large(text_font_large))
     def as_color(value):
         r, g, b = value
         return cg.RawExpression(f"Color({r}, {g}, {b})")

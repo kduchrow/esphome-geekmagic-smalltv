@@ -19,7 +19,7 @@ void DisplayFramework::setup() {
   this->register_service(
       &DisplayFramework::set_page,
       "set_page",
-      {"page_id", "active", "icon", "title", "subtitle", "details", "valid_for_s", "progress"});
+      {"page_id", "active", "icon", "title", "subtitle", "details", "valid_for_s", "progress", "font_size"});
   this->register_service(&DisplayFramework::set_header, "set_header",
                          {"active", "icon", "title", "subtitle", "valid_for_s", "icon_color", "pulse",
                           "pulse_period_ms", "pulse_min", "pulse_max"});
@@ -77,7 +77,8 @@ void DisplayFramework::dump_config() {
 }
 
 void DisplayFramework::set_page(std::string page_id, bool active, std::string icon, std::string title,
-                                std::string subtitle, std::string details, int32_t valid_for_s, int32_t progress) {
+                                std::string subtitle, std::string details, int32_t valid_for_s, int32_t progress,
+                                int32_t font_size) {
   if (page_id.empty()) {
     ESP_LOGW(TAG, "set_page ignored: empty page_id");
     return;
@@ -108,6 +109,7 @@ void DisplayFramework::set_page(std::string page_id, bool active, std::string ic
     } else if (normalized_progress > 100) {
       normalized_progress = 100;
     }
+    int normalized_font_size = (font_size == 1) ? 1 : 0;
     if (index >= 0) {
       ESP_LOGI(TAG, "set_page updating '%s' in slot %d", page_id.c_str(), index);
       auto &slot = this->slots_[index];
@@ -117,6 +119,7 @@ void DisplayFramework::set_page(std::string page_id, bool active, std::string ic
       slot.subtitle = subtitle;
       slot.details = details;
       slot.progress = normalized_progress;
+      slot.font_size = normalized_font_size;
       slot.expiry_ts = expiry;
     } else {
       int insert_index = -1;
@@ -140,6 +143,7 @@ void DisplayFramework::set_page(std::string page_id, bool active, std::string ic
       slot.subtitle = subtitle;
       slot.details = details;
       slot.progress = normalized_progress;
+      slot.font_size = normalized_font_size;
       slot.expiry_ts = expiry;
     }
   }
@@ -219,51 +223,76 @@ void DisplayFramework::render(display::Display &it) {
 
   auto now = this->clock_ != nullptr ? this->clock_->now() : ESPTime();
   bool time_valid = this->clock_ != nullptr && now.is_valid();
+  uint32_t now_ts = time_valid ? now.timestamp : 0;
 
   Color accent_color = this->accent_color_();
 
-  if (time_valid) {
-    it.printf(4, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "TIME %02d:%02d:%02d", now.hour,
-              now.minute, now.second);
-    it.printf(width - 4, 4, this->text_font_, accent_color, display::TextAlign::TOP_RIGHT, "%02d-%02d",
-              now.day_of_month, now.month);
+  // Dynamic layout
+  const int time_height = this->show_time_ ? 22 : 0;
+  const bool header_mode = this->has_active_header_();
+
+  int separator_y = -1;
+  int dots_y = -1;
+  int page_y;
+  if (header_mode) {
+    separator_y = time_height + 44;
+    dots_y = separator_y + 4;
+    page_y = dots_y + 10;
   } else {
-    it.printf(4, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "TIME --:--");
+    page_y = time_height + 6;
   }
 
-  uint32_t now_ts = (time_valid) ? now.timestamp : 0;
-
-  int active_count = 0;
-  for (const auto &slot : this->slots_) {
-    if (slot.active && !this->is_expired_(slot, now_ts)) {
-      active_count++;
+  // Time bar
+  if (this->show_time_) {
+    if (time_valid) {
+      it.printf(4, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "TIME %02d:%02d:%02d", now.hour,
+                now.minute, now.second);
+      it.printf(width - 4, 4, this->text_font_, accent_color, display::TextAlign::TOP_RIGHT, "%02d-%02d",
+                now.day_of_month, now.month);
+    } else {
+      it.printf(4, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "TIME --:--");
     }
   }
-  if (active_count > 0) {
-    const int dot_spacing = 8;
-    const int dot_radius = 2;
-    const int dots_width = (active_count - 1) * dot_spacing;
-    const int start_x = (width / 2) - (dots_width / 2);
-    const int dot_y = 70;
-    int idx = 0;
-    for (int i = 0; i < static_cast<int>(this->slots_.size()); i++) {
-      const auto &slot = this->slots_[i];
+
+  // Page dots (header mode only)
+  if (header_mode && dots_y >= 0) {
+    int active_count = 0;
+    for (const auto &slot : this->slots_) {
       if (slot.active && !this->is_expired_(slot, now_ts)) {
-        const int x = start_x + (idx * dot_spacing);
-        if (i == this->current_page_index_) {
-          it.filled_circle(x, dot_y, dot_radius, accent_color);
-        } else {
-          it.circle(x, dot_y, dot_radius, accent_color);
+        active_count++;
+      }
+    }
+    if (active_count > 0) {
+      const int dot_spacing = 8;
+      const int dot_radius = 2;
+      const int dots_width = (active_count - 1) * dot_spacing;
+      const int start_x = (width / 2) - (dots_width / 2);
+      int idx = 0;
+      for (int i = 0; i < static_cast<int>(this->slots_.size()); i++) {
+        const auto &slot = this->slots_[i];
+        if (slot.active && !this->is_expired_(slot, now_ts)) {
+          const int x = start_x + (idx * dot_spacing);
+          if (i == this->current_page_index_) {
+            it.filled_circle(x, dots_y, dot_radius, accent_color);
+          } else {
+            it.circle(x, dots_y, dot_radius, accent_color);
+          }
+          idx++;
         }
-        idx++;
       }
     }
   }
 
-  this->render_header_(it, now_ts, accent_color);
+  // Header and separator
+  if (header_mode) {
+    int header_text_y = time_height + 6;
+    int header_icon_y = time_height - 4;
+    if (header_icon_y < 0) header_icon_y = 0;
+    this->render_header_(it, now_ts, accent_color, header_text_y, header_icon_y);
+    it.filled_rectangle(4, separator_y, width - 8, 1, accent_color);
+  }
 
-  it.filled_rectangle(4, 66, width - 8, 1, accent_color);
-
+  // Notification icon
   if (this->notification_enabled_) {
     std::string notif_glyph = this->resolve_icon_glyph_(this->notification_icon_);
     if (!notif_glyph.empty()) {
@@ -272,9 +301,8 @@ void DisplayFramework::render(display::Display &it) {
     }
   }
 
-  const int page_y = 82;
+  // Page content
   const int icon_page_x = 6;
-  const int text_x = 64;
   const int line_height = 18;
 
   int page_index = this->current_page_index_;
@@ -291,25 +319,29 @@ void DisplayFramework::render(display::Display &it) {
 
   if (page_index >= 0) {
     const auto &slot = this->slots_[page_index];
+    font::Font *page_font = (slot.font_size == 1 && this->text_font_large_ != nullptr)
+                                ? this->text_font_large_
+                                : this->text_font_;
     std::string page_icon = this->resolve_icon_glyph_(slot.icon);
-    if (!page_icon.empty()) {
+    bool has_icon = !page_icon.empty();
+    const int text_x = has_icon ? 64 : 6;
+
+    if (has_icon) {
       it.printf(icon_page_x, page_y, this->icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s",
                 page_icon.c_str());
     }
-
     if (!slot.title.empty()) {
-      it.printf(text_x, page_y + 2, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
+      it.printf(text_x, page_y + 2, page_font, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
                 slot.title.c_str());
     }
     if (!slot.subtitle.empty()) {
-      it.printf(text_x, page_y + 2 + line_height, this->text_font_, this->subtitle_color_,
+      it.printf(text_x, page_y + 2 + line_height, page_font, this->subtitle_color_,
                 display::TextAlign::TOP_LEFT, "%s", slot.subtitle.c_str());
     }
-
     std::vector<std::string> lines;
     this->split_details_(slot.details, lines);
     for (size_t i = 0; i < lines.size(); i++) {
-      it.printf(text_x, page_y + 2 + (line_height * (2 + static_cast<int>(i))), this->text_font_, this->detail_color_,
+      it.printf(text_x, page_y + 2 + (line_height * (2 + static_cast<int>(i))), page_font, this->detail_color_,
                 display::TextAlign::TOP_LEFT, "%s", lines[i].c_str());
     }
     if (slot.progress > 0) {
@@ -320,7 +352,7 @@ void DisplayFramework::render(display::Display &it) {
       this->draw_progress_bar_(it, bar_x, bar_y, bar_width, bar_height, slot.progress, accent_color);
     }
   } else {
-    it.printf(text_x, page_y + 2, this->text_font_, this->detail_color_, display::TextAlign::TOP_LEFT, "NO PAGES");
+    it.printf(6, page_y + 2, this->text_font_, this->detail_color_, display::TextAlign::TOP_LEFT, "NO PAGES");
   }
 
   this->render_footer_(it, accent_color);
@@ -466,11 +498,16 @@ void DisplayFramework::refresh_current_page_() {
   }
 }
 
-void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Color accent_color) {
+bool DisplayFramework::has_active_header_() const {
+  if (!this->headers_.empty()) return true;
+  return this->show_default_header_;
+}
+
+void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Color accent_color,
+                                      int header_y, int header_icon_y) {
   const int width = it.get_width();
-  const int header_y = 28;
   const int icon_x = width - 52;
-  const int icon_y = 18;
+  const int icon_y = header_icon_y;
   bool header_active = !this->headers_.empty();
   HeaderSlot *header = nullptr;
   if (header_active) {
@@ -535,6 +572,15 @@ void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Col
     return;
   }
 
+  if (!this->default_header_title_.empty()) {
+    it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
+              this->default_header_title_.c_str());
+    if (!this->default_header_subtitle_.empty()) {
+      it.printf(4, header_y + 16, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "%s",
+                this->default_header_subtitle_.c_str());
+    }
+    return;
+  }
   it.printf(4, header_y, this->text_font_, this->title_color_, display::TextAlign::TOP_LEFT, "HAPPY DAY");
   it.printf(4, header_y + 16, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, ":)");
 }

@@ -55,7 +55,8 @@ display_framework:
 
 - `set_page`
   - `page_id` (string), `active` (bool), `icon` (string), `title` (string), `subtitle` (string),
-    `details` (string), `valid_for_s` (int, 0 = no expiry), `progress` (int, 1-100, optional)
+    `details` (string), `valid_for_s` (int, 0 = no expiry), `progress` (int, 1-100, optional),
+    `font_size` (int, 0 = normal, 1 = large, optional)
 - `set_header`
   - `active` (bool), `icon` (string), `title` (string), `subtitle` (string), `valid_for_s` (int, 0 = no expiry),
     `icon_color` (hex string), `pulse` (bool), `pulse_period_ms` (int), `pulse_min` (float), `pulse_max` (float)
@@ -193,3 +194,8 @@ alias: Display WashData Summary
 - For smoother header pulse animation, lower `update_interval` (for example `200ms`).
 - Multiple header messages are queued (default 3) and rotated every 5 seconds.
 - `set_page` can draw a progress bar (140x10) after the details lines when `progress` is set (> 0).
+- Set `show_time: false` to hide the clock/date bar at the top.
+- Set `show_default_header: false` to disable the default header entirely and use full-screen page layout.
+- Configure `default_header_title` and `default_header_subtitle` to show fixed text in the default header instead of weather or "HAPPY DAY".
+- Add `text_font_large` to the component config and pass `font_size: 1` in `set_page` to use a larger font for that page.
+- When a page has no icon, text expands to use the full display width.
