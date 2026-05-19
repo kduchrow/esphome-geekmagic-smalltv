@@ -62,6 +62,9 @@ font:
   - id: text_font_14
     file: "gfonts://Roboto"
     size: 14
+  - id: text_font_20
+    file: "gfonts://Roboto"
+    size: 20
   - id: icon_font_48
     file:
       type: web
@@ -150,13 +153,18 @@ display_framework:
   display_id: my_display
   time_id: sntp_time
   text_font: text_font_14
+  text_font_large: text_font_20  # optional: used when set_page sends font_size: 1
   icon_font: icon_font_48
   max_pages: 5
   delimiter: "-|-"
   rotation_interval: 20s
   expiry_interval: 10s
   update_interval: 200ms
+  show_time: true             # set false to hide clock/date bar
   show_weather: false
+  show_default_header: true   # set false for fullscreen card layout
+  # default_header_title: "MY DEVICE"    # optional fixed header title
+  # default_header_subtitle: "Ready"     # optional fixed header subtitle
   wifi_signal: wifi_signal_db
   wifi_ip: wifi_ip_address
   max_headers: 3
