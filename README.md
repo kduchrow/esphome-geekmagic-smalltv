@@ -110,15 +110,33 @@ display_framework:
 
 ## Home Assistant Blueprints
 
-Ready-made automation blueprints are available in the [`blueprints/`](blueprints/) folder. Import them into Home Assistant via **Settings → Automations → Blueprints → Import Blueprint** and paste the raw GitHub URL.
-
-| Blueprint | Description |
-|---|---|
-| [`display_page.yaml`](blueprints/display_page.yaml) | Push any content page on any trigger. Supports icon, title, subtitle, details, progress bar, font size, and expiry. |
-| [`display_header_alert.yaml`](blueprints/display_header_alert.yaml) | Send a header alert with optional pulse animation and custom icon color, on any trigger. |
-| [`display_binary_sensor_notification.yaml`](blueprints/display_binary_sensor_notification.yaml) | Show the notification icon when a binary sensor turns on; hide it when it turns off. |
+Click a button below to import a blueprint directly into your Home Assistant instance.
 
 **Device name:** in all blueprints you enter the ESPHome device name — the value from the `name:` field in your ESPHome YAML, with hyphens replaced by underscores (e.g. `my-smalltv` → `my_smalltv`).
+
+---
+
+### Send Page
+
+Push any content page to the display on any trigger. Supports icon, title, subtitle, details, progress bar, font size, and expiry.
+
+[![Import blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fkduchrow%2Fesphome-geekmagic-smalltv%2Fmain%2Fblueprints%2Fdisplay_page.yaml)
+
+---
+
+### Header Alert
+
+Send a header alert with optional pulse animation and custom icon color, on any trigger.
+
+[![Import blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fkduchrow%2Fesphome-geekmagic-smalltv%2Fmain%2Fblueprints%2Fdisplay_header_alert.yaml)
+
+---
+
+### Binary Sensor Notification
+
+Show the notification icon when a binary sensor turns on; hide it automatically when it turns off.
+
+[![Import blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fkduchrow%2Fesphome-geekmagic-smalltv%2Fmain%2Fblueprints%2Fdisplay_binary_sensor_notification.yaml)
 
 ---
 
