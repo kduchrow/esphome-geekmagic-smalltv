@@ -7,3 +7,8 @@
 # Personal device configs (gitignored — use examples/ as templates)
 /my_examples/
 
+# --- agent-meta managed (do not edit) ---
+.opencode/settings.local.json
+AGENTS.personal.md
+# --- end agent-meta managed ---
+sync.log

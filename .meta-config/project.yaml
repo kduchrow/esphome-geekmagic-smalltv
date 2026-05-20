@@ -1,0 +1,148 @@
+# .meta-config/project.yaml — Projekt-Konfiguration für agent-meta
+agent-meta-version: 0.45.0
+
+ai-providers:
+  - Opencode
+
+dod-preset: rapid-prototyping
+
+platforms: []
+
+roles:
+  - orchestrator
+  - developer
+  - requirements
+  - validator
+  - documenter
+  - git
+  - release
+  - feature
+  - ideation
+  - meta-feedback
+  - agent-meta-manager
+  - reviewer
+  - log-analyzer
+
+project:
+  name: esphome-geekmagic-smalltv
+  prefix: gmtv
+  short: geekmagic-smalltv
+
+speech-mode: full
+
+max-parallel-agents: 2
+
+variables:
+  PROJECT_NAME: esphome-geekmagic-smalltv
+  PROJECT_DESCRIPTION: >-
+    ESPHome external component for GeekMagic SmallTV display framework with page stack, rotation, and expiry.
+  PROJECT_GOAL: >-
+    Provide a reusable ESPHome display framework for the GeekMagic SmallTV Ultra (ESP8266, 240x240 ST7789V)
+    so Home Assistant users can push cards/pages with minimal YAML configuration.
+  AUTHOR: "kduchrow"
+  INITIAL_VERSION: "1.0.0"
+
+  PLATFORM: "ESPHome External Component (ESP8266 + ST7789V)"
+  RUNTIME: "ESPHome 2026.x (ESP8266, C++/Python)"
+  PROJECT_LANGUAGES: "C++, Python"
+
+  COMMUNICATION_LANGUAGE: Deutsch
+  USER_INPUT_LANGUAGE: Deutsch
+  DOCS_LANGUAGE: Englisch
+  INTERNAL_DOCS_LANGUAGE: Deutsch
+  CODE_LANGUAGE: Englisch
+  LANGUAGE: Englisch
+
+  GIT_PLATFORM: GitHub
+  GIT_REMOTE_URL: https://github.com/kduchrow/esphome-geekmagic-smalltv
+  GIT_MAIN_BRANCH: main
+
+  BUILD_COMMAND: docker compose run --rm esphome compile my_examples/displayarbeitszimmer.dev.yaml
+  TEST_COMMAND: docker compose run --rm esphome config my_examples/displayarbeitszimmer.dev.yaml
+  DEV_COMMANDS: |
+    docker compose run --rm esphome compile my_examples/displayarbeitszimmer.dev.yaml
+    docker compose run --rm esphome run my_examples/displayarbeitszimmer.dev.yaml
+  TEST_COMMANDS: docker compose run --rm esphome config my_examples/displayarbeitszimmer.dev.yaml
+  BUILD_COMMANDS: docker compose run --rm esphome compile my_examples/displayarbeitszimmer.dev.yaml
+
+  PROJECT_CONTEXT: >-
+    ESPHome external component providing a reusable display framework for the GeekMagic SmallTV Ultra
+    (ESP8266, 240x240 ST7789V display with fractional framebuffer). The component manages a page stack
+    with rotation, expiry, header queue, and notification icon. Users interact via ESPHome services
+    (set_page, set_header, set_notification) from Home Assistant automations. Development uses Docker
+    Compose with esphome/esphome image. The component has Python (config schema/codegen) and C++
+    (display driver) files that must stay in sync. Tested only on GeekMagic SmallTV Ultra.
+  ARCHITECTURE: |
+    components/display_framework/
+      __init__.py             # ESPHome config schema + code-gen wiring
+      display_framework.h     # C++ class declaration + setters
+      display_framework.cpp   # C++ render pipeline + page stack logic
+    examples/                 # Community-facing YAML templates (tracked)
+    my_examples/              # Personal device configs (gitignored)
+    blueprints/               # Home Assistant automation blueprints
+    docker-compose.yml        # ESPHome container (tracked, repo root)
+    DEV.md                    # Developer guide (authoritative workflow)
+    README.md                 # Public documentation
+    display-framework.md      # Component design spec
+    FEATURE_REQUESTS.md       # Feature backlog
+  CODE_CONVENTIONS: |
+    - Python: ESPHome component conventions, snake_case for variables
+    - C++: ESPHome core conventions, camelCase for methods, snake_case for variables
+    - YAML: ESPHome schema conventions, 2-space indent
+    - Comments in English, commit messages in Conventional Commits format
+    - All three component files (__init__.py, .h, .cpp) must stay in sync
+    - No secrets in tracked files — credentials in my_examples/secrets.yaml (gitignored)
+
+  PROJECT_STRUCTURE: |
+    components/display_framework/
+      __init__.py             # ESPHome config schema + CV_SCHEMA, code-gen to C++
+      display_framework.h     # DisplayFramework class, page stack, header queue
+      display_framework.cpp   # Render pipeline, page rotation, icon rendering
+    examples/                 # Public YAML examples for users
+    my_examples/              # Personal test configs (gitignored)
+    blueprints/               # Home Assistant automation blueprints
+    docker-compose.yml        # ESPHome build container
+  ENTRY_POINT_PATTERN: "components/display_framework/__init__.py (CV_SCHEMA + code-gen entry point)"
+  KEY_PATTERNS: |
+    - Python __init__.py defines CV_SCHEMA and calls codegen.register_component()
+    - C++ .h/.cpp implement the display driver with page stack, rotation, expiry
+    - Python and C++ must stay in sync — field names in CV_SCHEMA map to C++ setters
+    - ESPHome services (set_page, set_header, set_notification) are the user API
+  DEV_STACK_START: "docker compose run --rm esphome run my_examples/displayarbeitszimmer.dev.yaml"
+  DEV_STACK_RELOAD: "docker compose run --rm esphome compile my_examples/displayarbeitszimmer.dev.yaml"
+  REQ_CATEGORIES: |
+    - **display**: Display rendering, framebuffer, ST7789V driver
+    - **page**: Page stack, rotation, expiry, priority, sticky pages
+    - **header**: Header queue, priority, timeout
+    - **notification**: Notification icon, fallback glyphs
+    - **widget**: Widgets (progress bar, text, icons)
+    - **theme**: Per-page theme overrides, colors
+    - **footer**: Footer layout presets (ip/wifi/clock/custom)
+    - **service**: ESPHome services, Home Assistant integration
+    - **font**: Icon fonts, glyph lists, custom images
+    - **power**: Sleep/Do-Not-Disturb, dimming
+
+  AGENT_META_REPO: Popoboxxo/agent-meta
+
+  SYSTEM_DEPENDENCIES: "Docker, Docker Compose"
+  SYSTEM_URLS: ""
+  SERVICE_NAME: ""
+  CONTAINER_NAME: esphome
+  PRIMARY_PORT: "6052"
+  EXTRA_PORTS: ""
+  BUILD_OUTPUT: ""
+  ARTIFACT_ZIP_CMD: ""
+  ARTIFACT_TAR_CMD: ""
+  GH_ASSETS: ""
+  BUILD_SYSTEM_NOTES: "ESPHome compiles to ESP8266 firmware binary (.firmware.bin). Build requires docker compose with esphome/esphome image. Flash via ESPHome dashboard or OTA."
+  VERSION_DIST_BEHAVIOUR: ""
+  EXTRA_DONTS: |
+    - NEVER modify C++ and Python files independently — they must stay in sync
+    - NEVER commit secrets (WiFi passwords, API keys) — use my_examples/secrets.yaml
+    - NEVER assume display works on hardware other than GeekMagic SmallTV Ultra
+    - NEVER change the ST7789V framebuffer size (240x240) without hardware verification
+  CODE_QUALITY_RULES: |
+    - All CV_SCHEMA fields must have corresponding C++ setters
+    - Icon glyph codes must be present in the compiled font glyph list
+    - Page stack operations must handle empty stack gracefully
+    - Header queue must handle overflow (drop lowest priority or oldest)
