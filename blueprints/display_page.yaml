@@ -50,27 +50,30 @@ blueprint:
 
     title:
       name: Title
-      description: Main title text on the page.
+      description: >
+        Main title text on the page. Supports Jinja2 templates,
+        e.g. `{{ states('sensor.my_sensor') }}`.
       default: ""
       selector:
-        text: {}
+        template: {}
 
     subtitle:
       name: Subtitle
-      description: Secondary line shown below the title.
+      description: >
+        Secondary line shown below the title. Supports Jinja2 templates.
       default: ""
       selector:
-        text: {}
+        template: {}
 
     details:
       name: Details
       description: >
         Detail text. Separate multiple lines with `-|-`
-        (e.g. `Line 1-|-Line 2-|-Line 3`). Supports Jinja2 templates.
+        (e.g. `Line 1-|-Line 2-|-Line 3`). Supports Jinja2 templates,
+        e.g. `{{ states('sensor.a') }}-|-{{ states('sensor.b') }}`.
       default: ""
       selector:
-        text:
-          multiline: true
+        template: {}
 
     valid_for_s:
       name: Valid for (seconds)
@@ -99,17 +102,15 @@ blueprint:
       name: Progress bar (%)
       description: >
         Draws a progress bar below the detail lines. 0 = hidden, 1–100 = filled
-        percentage. Supports Jinja2 templates.
-      default: 0
+        percentage. Accepts a static number **or** a Jinja2 template,
+        e.g. `{{ states('sensor.washing_machine_progress') | int(0) }}`.
+      default: "0"
       selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-          mode: slider
+        template: {}
 
 variables:
   _device: !input esphome_device_name
+  _progress: !input progress
 
 trigger: !input trigger_config
 
@@ -124,4 +125,4 @@ action:
       details: !input details
       valid_for_s: !input valid_for_s
       font_size: !input font_size
-      progress: !input progress
+      progress: "{{ _progress | int(0) }}"
