@@ -1,0 +1,137 @@
+blueprint:
+  name: SmallTV — Header Alert
+  description: >
+    Sends a header alert to a GeekMagic SmallTV display running the
+    display_framework ESPHome component. Supports icon, pulse animation, and
+    custom color. Fires on any trigger you configure.
+
+    **Device name:** use the ESPHome `name:` field value with hyphens replaced
+    by underscores. Example: `my_smalltv`.
+
+    To clear the header queue, set **Active** to Off.
+  domain: automation
+  input:
+    esphome_device_name:
+      name: ESPHome Device Name
+      description: >
+        ESPHome device name as it appears in the service call prefix
+        (hyphens → underscores). Example: `my_smalltv`.
+      selector:
+        text: {}
+
+    trigger_config:
+      name: Trigger
+      description: When should this header alert be sent?
+      selector:
+        trigger: {}
+
+    active:
+      name: Active
+      description: >
+        On = add/refresh this header in the queue.
+        Off = clear the entire header queue.
+      default: true
+      selector:
+        boolean: {}
+
+    icon:
+      name: Icon
+      description: MDI icon shown in the header, e.g. `mdi:bell`.
+      default: "mdi:bell"
+      selector:
+        icon:
+          placeholder: mdi:bell
+
+    title:
+      name: Title
+      description: Short alert title shown in the header bar.
+      default: "Alert"
+      selector:
+        text: {}
+
+    subtitle:
+      name: Subtitle
+      description: Optional second line below the title.
+      default: ""
+      selector:
+        text: {}
+
+    valid_for_s:
+      name: Valid for (seconds)
+      description: >
+        How long this header stays in the queue. 0 = no expiry.
+      default: 300
+      selector:
+        number:
+          min: 0
+          max: 86400
+          unit_of_measurement: s
+          mode: box
+
+    icon_color:
+      name: Icon color (hex)
+      description: >
+        6-digit hex color for the icon, **without** the `#`. Example: `FF0000`
+        for red, `FCB712` for the default golden yellow.
+      default: "FCB712"
+      selector:
+        text: {}
+
+    pulse:
+      name: Pulse animation
+      description: Animate the icon brightness in and out.
+      default: false
+      selector:
+        boolean: {}
+
+    pulse_period_ms:
+      name: Pulse period (ms)
+      description: Duration of one full pulse cycle. 1000 ms = 1 s.
+      default: 1000
+      selector:
+        number:
+          min: 100
+          max: 10000
+          unit_of_measurement: ms
+          mode: box
+
+    pulse_min:
+      name: Pulse minimum brightness
+      description: Lowest icon brightness during pulse (0.0–1.0).
+      default: 0.2
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.05
+          mode: slider
+
+    pulse_max:
+      name: Pulse maximum brightness
+      description: Highest icon brightness during pulse (0.0–1.0).
+      default: 1.0
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.05
+          mode: slider
+
+variables:
+  _device: !input esphome_device_name
+
+trigger: !input trigger_config
+
+action:
+  - action: "esphome.{{ _device }}_set_header"
+    data:
+      active: !input active
+      icon: !input icon
+      title: !input title
+      subtitle: !input subtitle
+      valid_for_s: !input valid_for_s
+      icon_color: !input icon_color
+      pulse: !input pulse
+      pulse_period_ms: !input pulse_period_ms
+      pulse_min: !input pulse_min
+      pulse_max: !input pulse_max

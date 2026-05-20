@@ -1,0 +1,76 @@
+blueprint:
+  name: SmallTV — Binary Sensor Notification
+  description: >
+    Shows a notification icon on a GeekMagic SmallTV display when a binary
+    sensor turns on, and hides it again when the sensor turns off.
+
+    **Device name:** use the ESPHome `name:` field value with hyphens replaced
+    by underscores. Example: `my_smalltv`.
+  domain: automation
+  input:
+    esphome_device_name:
+      name: ESPHome Device Name
+      description: >
+        ESPHome device name as it appears in the service call prefix
+        (hyphens → underscores). Example: `my_smalltv`.
+      selector:
+        text: {}
+
+    binary_sensor:
+      name: Binary Sensor
+      description: >
+        The binary sensor to watch. Notification appears when it turns **on**
+        and disappears when it turns **off**.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    icon_on:
+      name: Icon (sensor ON)
+      description: MDI icon displayed while the sensor is active.
+      default: "mdi:bell-ring"
+      selector:
+        icon:
+          placeholder: mdi:bell-ring
+
+    icon_off:
+      name: Icon (sensor OFF)
+      description: >
+        MDI icon sent when turning the notification off. Usually doesn't matter
+        visually — the notification is hidden immediately.
+      default: "mdi:bell"
+      selector:
+        icon:
+          placeholder: mdi:bell
+
+variables:
+  _device: !input esphome_device_name
+
+trigger:
+  - trigger: state
+    entity_id: !input binary_sensor
+    to: "on"
+    id: sensor_on
+  - trigger: state
+    entity_id: !input binary_sensor
+    to: "off"
+    id: sensor_off
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: sensor_on
+        sequence:
+          - action: "esphome.{{ _device }}_set_notification"
+            data:
+              enabled: true
+              icon: !input icon_on
+      - conditions:
+          - condition: trigger
+            id: sensor_off
+        sequence:
+          - action: "esphome.{{ _device }}_set_notification"
+            data:
+              enabled: false
+              icon: !input icon_off

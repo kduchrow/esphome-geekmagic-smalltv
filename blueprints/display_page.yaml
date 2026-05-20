@@ -1,0 +1,127 @@
+blueprint:
+  name: SmallTV — Send Page
+  description: >
+    Pushes a content page to a GeekMagic SmallTV display running the
+    display_framework ESPHome component. Attach any trigger you like — the page
+    is (re-)sent every time the automation fires.
+
+    **Device name:** use the ESPHome `name:` field value, with hyphens replaced
+    by underscores. Example: if your device is named `my-smalltv`, enter
+    `my_smalltv`.
+  domain: automation
+  input:
+    esphome_device_name:
+      name: ESPHome Device Name
+      description: >
+        ESPHome device name as it appears in the service call prefix
+        (hyphens → underscores). Example: `my_smalltv`.
+      selector:
+        text: {}
+
+    trigger_config:
+      name: Trigger
+      description: When should this page be sent / refreshed?
+      selector:
+        trigger: {}
+
+    page_id:
+      name: Page ID
+      description: >
+        Unique key for this page. Use the same ID to update the page later, or
+        send `active: false` with this ID to remove it.
+      default: "page_1"
+      selector:
+        text: {}
+
+    active:
+      name: Active
+      description: Set to Off to remove this page from the display rotation.
+      default: true
+      selector:
+        boolean: {}
+
+    icon:
+      name: Icon
+      description: MDI icon, e.g. `mdi:home`. Leave empty for no icon.
+      default: ""
+      selector:
+        icon:
+          placeholder: mdi:home
+
+    title:
+      name: Title
+      description: Main title text on the page.
+      default: ""
+      selector:
+        text: {}
+
+    subtitle:
+      name: Subtitle
+      description: Secondary line shown below the title.
+      default: ""
+      selector:
+        text: {}
+
+    details:
+      name: Details
+      description: >
+        Detail text. Separate multiple lines with `-|-`
+        (e.g. `Line 1-|-Line 2-|-Line 3`). Supports Jinja2 templates.
+      default: ""
+      selector:
+        text:
+          multiline: true
+
+    valid_for_s:
+      name: Valid for (seconds)
+      description: >
+        How long the page stays visible. 0 = no expiry. After this time the
+        display framework removes the page automatically.
+      default: 3600
+      selector:
+        number:
+          min: 0
+          max: 86400
+          unit_of_measurement: s
+          mode: box
+
+    font_size:
+      name: Font size
+      description: 0 = normal (14 px)  |  1 = large (20 px, requires text_font_large in ESPHome config)
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 1
+          mode: box
+
+    progress:
+      name: Progress bar (%)
+      description: >
+        Draws a progress bar below the detail lines. 0 = hidden, 1–100 = filled
+        percentage. Supports Jinja2 templates.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+
+variables:
+  _device: !input esphome_device_name
+
+trigger: !input trigger_config
+
+action:
+  - action: "esphome.{{ _device }}_set_page"
+    data:
+      page_id: !input page_id
+      active: !input active
+      icon: !input icon
+      title: !input title
+      subtitle: !input subtitle
+      details: !input details
+      valid_for_s: !input valid_for_s
+      font_size: !input font_size
+      progress: !input progress
