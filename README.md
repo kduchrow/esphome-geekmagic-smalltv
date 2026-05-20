@@ -2,12 +2,57 @@
 
 This repo provides an ESPHome external component that implements a reusable display framework with dynamic pages, rotation, and expiry. Users keep their ESPHome YAML minimal and feed cards/pages via services.
 
+> **Hardware:** Currently developed and tested on the **GeekMagic SmallTV Ultra** (ESP8266, 240×240 ST7789V display). Other GeekMagic models or similar ESP-based displays may work but are untested.
+
 ## Features
 
 - Page stack with rotation and expiry
 - Services to add/update/remove pages and notifications
 - Configurable max pages, delimiter, and timers
 - Simple render hook for ST7789V display
+
+## First Flash (OTA — no USB required)
+
+The GeekMagic SmallTV Ultra ships with stock firmware that includes an OTA update page. You can replace it with ESPHome entirely over the network.
+
+### Step 1 — Set up the device with stock firmware
+
+1. Power on the device.
+2. Download the **GeekMagic** companion app and follow its pairing flow to connect the device to your WiFi network.
+3. Note the device's IP address (shown in the app or your router's DHCP list).
+
+### Step 2 — Build the ESPHome firmware binary
+
+1. Create your ESPHome YAML (copy and adapt `examples/smalltv-minimal.yaml`).
+2. Set your WiFi credentials and API encryption key.
+3. Build the `.bin` file — **do not flash yet**:
+   ```bash
+   docker compose run --rm esphome compile my_examples/your_device.yaml
+   ```
+4. The firmware binary is written to:
+   ```
+   .esphome/build/<device-name>/.pioenvs/<device-name>/firmware.bin
+   ```
+
+### Step 3 — Upload via the stock firmware OTA page
+
+1. Open a browser and navigate to the device's OTA update URL:
+   ```
+   http://<device-ip>/update
+   ```
+2. Select the `firmware.bin` file produced in Step 2 and click **Update**.
+3. Wait for the upload to complete. The device will reboot automatically.
+
+### Step 4 — Verify ESPHome is running
+
+After the reboot the device runs ESPHome. You can confirm by checking Home Assistant (it should appear as a new device) or by connecting to it with the ESPHome logs command:
+```bash
+docker compose run --rm esphome logs my_examples/your_device.yaml
+```
+
+All future updates can be done with the normal ESPHome OTA flow — no more stock firmware involved.
+
+---
 
 ## Quick Start
 
