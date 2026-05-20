@@ -46,6 +46,9 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void set_default_header_title(const std::string &v) { this->default_header_title_ = v; }
   void set_default_header_subtitle(const std::string &v) { this->default_header_subtitle_ = v; }
   void set_text_font_large(font::Font *f) { this->text_font_large_ = f; }
+  void set_time_icon_font(font::Font *f) { this->time_icon_font_ = f; }
+  void set_time_format(const std::string &fmt) { this->time_format_ = fmt; }
+  void set_date_format(const std::string &fmt) { this->date_format_ = fmt; }
 
   void set_page(std::string page_id, bool active, std::string icon, std::string title, std::string subtitle,
                 std::string details, int32_t valid_for_s, int32_t progress, int32_t font_size);
@@ -113,6 +116,7 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   const char *map_weather_icon_(const std::string &state) const;
   std::string resolve_icon_glyph_(const std::string &icon_name) const;
   void split_details_(const std::string &details, std::vector<std::string> &out) const;
+  std::vector<std::string> wrap_text_(const std::string &text, font::Font *font, int max_width) const;
   void request_update_();
 
   display::Display *display_{nullptr};
@@ -137,6 +141,9 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   std::string default_header_title_{};
   std::string default_header_subtitle_{};
   font::Font *text_font_large_{nullptr};
+  font::Font *time_icon_font_{nullptr};
+  std::string time_format_{"%H:%M:%S"};
+  std::string date_format_{"%d.%m"};
 
   Color accent_day_{Color(0xFC, 0xB7, 0x12)};
   Color accent_night_{Color(0xEB, 0x1C, 0x24)};

@@ -1,7 +1,9 @@
-# Gitignore settings for ESPHome
-# This is an example and may include too much for your use-case.
-# You can modify this file to suit your needs.
+# ESPHome build cache
 /.esphome/
-/secrets.yaml
-/my_examples
+
+# Secrets — never commit credentials
+**/secrets.yaml
+
+# Personal device configs (gitignored — use examples/ as templates)
+/my_examples/
 

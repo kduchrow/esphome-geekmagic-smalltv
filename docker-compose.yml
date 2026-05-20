@@ -1,0 +1,26 @@
+services:
+  esphome:
+    image: esphome/esphome:2026.4.5
+    container_name: esphome
+    restart: unless-stopped
+    volumes:
+      - .:/config:rw           # repo root → /config inside the container
+    working_dir: /config
+    command: ["version"]
+
+  # Integration test runner — sends test scenarios to the physical device
+  # Usage:
+  #   docker compose run --rm test
+  #   docker compose run --rm test --delay 6
+  #   docker compose run --rm test --filter "header"
+  #   docker compose run --rm test --filter "progress"
+  #   docker compose run --rm test --host 192.168.198.41
+  test:
+    image: python:3.12-slim
+    network_mode: host          # needed to reach mDNS (*.local) on the LAN
+    volumes:
+      - .:/workspace:ro
+    working_dir: /workspace
+    entrypoint: ["sh", "-c", "pip install aioesphomeapi --quiet && python tests/test_display.py \"$@\"", "--"]
+    profiles:
+      - test                    # not started by 'docker compose up'

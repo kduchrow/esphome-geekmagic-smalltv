@@ -185,6 +185,170 @@ alias: Display WashData Summary
               active: false
 ```
 
+## Layout Reference
+
+The 240×240 display is divided into up to four stacked zones. Which zones are visible depends on the configuration.
+
+```
+┌────────────────────────────────────────┐
+│  Time bar          (show_time: true)   │  22 px
+├────────────────────────────────────────┤
+│  Header area  (show_default_header:    │  44 px
+│               true / active headers)  │
+├────────────────────────────────────────┤
+│  ●  ○  ○   page indicator dots        │  14 px
+├────────────────────────────────────────┤
+│  Page content                          │  remaining
+├────────────────────────────────────────┤
+│  Footer  (IP address / WiFi signal)    │
+└────────────────────────────────────────┘
+```
+
+When `show_default_header: false` and no active headers are queued, the header zone and dots disappear entirely, giving more space to page content.
+
+---
+
+### Variant A — `show_time: true` + `show_default_header: true` (default)
+
+Clock, header, dots, and page content. The most information-dense layout.
+
+```
+┌────────────────────────────────────────┐
+│ 14:30:00                       12.05  │  ← time bar
+│ [icon]  Header Title                  │  ← header
+│         Header Subtitle               │
+├────────────────────────────────────────┤
+│          ●  ○  ○                      │  ← page dots
+│ [icon]  Page Title                    │  ← page content
+│         Subtitle                      │
+│         Detail line 1                 │
+│         Detail line 2                 │
+├────────────────────────────────────────┤
+│ 192.168.1.10                -65 dBm   │  ← footer
+└────────────────────────────────────────┘
+```
+
+---
+
+### Variant B — `show_time: true` + `show_default_header: false`
+
+Clock stays; header zone and dots removed. Useful when pages speak for themselves.
+
+```
+┌────────────────────────────────────────┐
+│ 14:30:00                       12.05  │  ← time bar
+│ [icon]  Page Title                    │  ← page content starts here
+│         Subtitle                      │
+│         Detail line 1                 │
+│         Detail line 2                 │
+│         Detail line 3                 │
+│         Detail line 4                 │
+├────────────────────────────────────────┤
+│ 192.168.1.10                -65 dBm   │  ← footer
+└────────────────────────────────────────┘
+```
+
+---
+
+### Variant C — `show_time: false` + `show_default_header: false`
+
+Maximum page area. Best combined with `font_size: 1` for big single-value displays.
+
+```
+┌────────────────────────────────────────┐
+│ [icon]  Page Title                    │  ← page content starts at top
+│         Subtitle                      │
+│         Detail line 1                 │
+│         Detail line 2                 │
+│         Detail line 3                 │
+│         Detail line 4                 │
+│         Detail line 5                 │
+├────────────────────────────────────────┤
+│ 192.168.1.10                -65 dBm   │  ← footer
+└────────────────────────────────────────┘
+```
+
+---
+
+### Icon vs. no icon
+
+**With `icon` set** — text starts at x=64 to leave room for the 48 px icon glyph:
+
+```
+│ ┌──────┐  Page Title                  │
+│ │ icon │  Subtitle                    │
+│ └──────┘  Detail 1                   │
+│           Detail 2                   │
+```
+
+**Without `icon`** — text expands to use the full width (x=6):
+
+```
+│ Page Title                           │
+│ Subtitle                             │
+│ Detail line 1                        │
+│ Detail line 2                        │
+```
+
+---
+
+### Font size
+
+**`font_size: 0`** (default, 14 px, line height 18 px) — compact, fits up to 4 detail lines:
+
+```
+│ [icon]  Title                        │
+│         Subtitle                     │
+│         Detail 1                     │
+│         Detail 2                     │
+```
+
+**`font_size: 1`** (large, 20 px, line height 24 px) — bigger text, fewer lines.  
+Best combined with Variant B or C to reclaim the lost header/time space:
+
+```
+│ [icon]  Title                        │
+│         Subtitle                     │
+│         Detail 1                     │
+```
+
+Requires `text_font_large` to be set in the component config:
+
+```yaml
+display_framework:
+  text_font: text_font_14
+  text_font_large: text_font_20   # ← enables font_size: 1 in set_page
+```
+
+---
+
+### Progress bar
+
+When `progress` (1–100) is passed to `set_page`, a 140×10 px bar is drawn below the detail lines.  
+Position and width are relative to the icon/no-icon text offset.
+
+```
+│ [icon]  Title                        │
+│         Subtitle                     │
+│         Detail 1  (60% done)         │
+│         [████████████████░░░░░░░░░]  │  ← 140 px wide, accent color
+```
+
+---
+
+### Header queue
+
+Up to `max_headers` (default 3) messages can be queued via `set_header`. They rotate every `header_rotation_interval` seconds. Each header can have an icon, title, subtitle, expiry, and optional pulse animation.
+
+```
+┌────────────────────────────────────────┐
+│ 14:30:00                       12.05  │
+│ [🔔]  ALERT                          │  ← rotates between queued headers
+│       Door opened                     │
+├────────────────────────────────────────┤
+│ ...                                   │
+```
+
 ## Notes
 
 - Default delimiter is `-|-` and up to four detail lines are rendered.
@@ -199,3 +363,5 @@ alias: Display WashData Summary
 - Configure `default_header_title` and `default_header_subtitle` to show fixed text in the default header instead of weather or "HAPPY DAY".
 - Add `text_font_large` to the component config and pass `font_size: 1` in `set_page` to use a larger font for that page.
 - When a page has no icon, text expands to use the full display width.
+- Time and date formats use `strftime` format strings (e.g. `%H:%M` for 24 h time, `%d.%m.%Y` for full date). Configure via `time_format` and `date_format`.
+- Add a small clock icon to the time bar by setting `time_icon_font` to a 14 px MDI font that includes the `mdi:clock-outline` glyph (`\U000F0954`).

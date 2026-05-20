@@ -25,6 +25,8 @@ logger:
 api:
   reboot_timeout: 0s
   custom_services: true
+  encryption:
+    key: "Pu0T9XatYALpR2HBL1wSrskkeKgLALswWayVbIkVFP0="
 
 ota:
   - platform: esphome
@@ -72,6 +74,14 @@ font:
       - "\U000F059E" # mdi-weather-windy-variant
       - "\U000F067E" # mdi-weather-lightning-rainy
       - "\U000F067F" # mdi-weather-snowy-rainy
+  # Optional: small icon font for the clock icon in the time bar.
+  - id: icon_font_14
+    file:
+      type: web
+      url: https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf
+    size: 14
+    glyphs:
+      - "\U000F0954" # mdi-clock-outline
 
 sensor:
   - platform: wifi_signal
@@ -127,6 +137,21 @@ display_framework:
   text_font: text_font_14
   text_font_large: text_font_20  # optional: used when set_page sends font_size: 1
   icon_font: icon_font_48
+  time_icon_font: icon_font_14   # small clock glyph in the time bar
+
+  # --- Time format (strftime syntax) ---
+  # %H:%M        → 14:30        24 h, no seconds
+  # %H:%M:%S     → 14:30:00     24 h with seconds
+  # %I:%M %p     → 02:30 PM     12 h AM/PM
+  time_format: "%H:%M"
+
+  # --- Date format (strftime syntax) ---
+  # %d.%m        → 20.05        day.month
+  # %d.%m.%Y     → 20.05.2026   full date with year
+  # %a %d.%m     → Di 20.05     abbreviated weekday + date
+  # %d %b        → 20 May       day + abbreviated month name
+  date_format: "%d.%m"
+
   update_interval: 200ms
   show_time: true             # set false to hide clock/date bar
   show_weather: true

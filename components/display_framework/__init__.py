@@ -32,6 +32,9 @@ CONF_SHOW_DEFAULT_HEADER = "show_default_header"
 CONF_DEFAULT_HEADER_TITLE = "default_header_title"
 CONF_DEFAULT_HEADER_SUBTITLE = "default_header_subtitle"
 CONF_TEXT_FONT_LARGE = "text_font_large"
+CONF_TIME_ICON_FONT = "time_icon_font"
+CONF_TIME_FORMAT = "time_format"
+CONF_DATE_FORMAT = "date_format"
 
 DEPENDENCIES = ["api", "display", "time"]
 AUTO_LOAD = ["font", "sensor", "text_sensor"]
@@ -59,6 +62,9 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_DEFAULT_HEADER_TITLE): cv.string,
             cv.Optional(CONF_DEFAULT_HEADER_SUBTITLE): cv.string,
             cv.Optional(CONF_TEXT_FONT_LARGE): cv.use_id(font.Font),
+            cv.Optional(CONF_TIME_ICON_FONT): cv.use_id(font.Font),
+            cv.Optional(CONF_TIME_FORMAT, default="%H:%M:%S"): cv.string,
+            cv.Optional(CONF_DATE_FORMAT, default="%d.%m"): cv.string,
             cv.Optional(CONF_WEATHER_STATE): cv.use_id(text_sensor.TextSensor),
             cv.Optional(CONF_SUN_ELEVATION): cv.use_id(sensor.Sensor),
             cv.Optional(CONF_WIFI_SIGNAL): cv.use_id(sensor.Sensor),
@@ -109,6 +115,11 @@ async def to_code(config):
     if CONF_TEXT_FONT_LARGE in config:
         text_font_large = await cg.get_variable(config[CONF_TEXT_FONT_LARGE])
         cg.add(var.set_text_font_large(text_font_large))
+    if CONF_TIME_ICON_FONT in config:
+        time_icon_font = await cg.get_variable(config[CONF_TIME_ICON_FONT])
+        cg.add(var.set_time_icon_font(time_icon_font))
+    cg.add(var.set_time_format(config[CONF_TIME_FORMAT]))
+    cg.add(var.set_date_format(config[CONF_DATE_FORMAT]))
     def as_color(value):
         r, g, b = value
         return cg.RawExpression(f"Color({r}, {g}, {b})")

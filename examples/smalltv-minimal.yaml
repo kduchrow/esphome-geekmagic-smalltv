@@ -52,7 +52,7 @@ captive_portal:
 time:
   - platform: sntp
     id: sntp_time
-    timezone: Europe/Berlin
+    timezone: Europe/Berlin    # adjust to your timezone
     servers:
       - 0.pool.ntp.org
       - 1.pool.ntp.org
@@ -94,6 +94,15 @@ font:
       - "\U000F067F" # mdi-weather-snowy-rainy
       - "\U000F0A72" # mdi-solar-power
       - "\U000F140B" # mdi-lightning-bolt
+  # Optional: small icon font for the clock icon in the time bar.
+  # Remove this block (and time_icon_font below) if you don't want a clock icon.
+  - id: icon_font_14
+    file:
+      type: web
+      url: https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf
+    size: 14
+    glyphs:
+      - "\U000F0954" # mdi-clock-outline
 
 spi:
   clk_pin: GPIO14
@@ -153,14 +162,29 @@ display_framework:
   display_id: my_display
   time_id: sntp_time
   text_font: text_font_14
-  text_font_large: text_font_20  # optional: used when set_page sends font_size: 1
+  text_font_large: text_font_20      # enables font_size: 1 in set_page calls
   icon_font: icon_font_48
+  time_icon_font: icon_font_14       # remove if you removed icon_font_14 above
+
+  # --- Time format (strftime syntax) ---
+  # %H:%M        → 14:30        24 h, no seconds       ← compact, recommended
+  # %H:%M:%S     → 14:30:00     24 h with seconds
+  # %I:%M %p     → 02:30 PM     12 h AM/PM
+  time_format: "%H:%M"
+
+  # --- Date format (strftime syntax) ---
+  # %d.%m        → 20.05        day.month              ← compact, recommended
+  # %d.%m.%Y     → 20.05.2026   full date with year
+  # %a %d.%m     → Di 20.05     abbreviated weekday + date (locale-dependent)
+  # %d %b        → 20 May       day + abbreviated month name
+  date_format: "%d.%m"
+
   max_pages: 5
   delimiter: "-|-"
   rotation_interval: 20s
   expiry_interval: 10s
   update_interval: 200ms
-  show_time: true             # set false to hide clock/date bar
+  show_time: true             # set false to hide the entire time/date bar
   show_weather: false
   show_default_header: true   # set false for fullscreen card layout
   # default_header_title: "MY DEVICE"    # optional fixed header title

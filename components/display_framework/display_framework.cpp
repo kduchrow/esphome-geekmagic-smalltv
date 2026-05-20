@@ -244,13 +244,24 @@ void DisplayFramework::render(display::Display &it) {
 
   // Time bar
   if (this->show_time_) {
+    int time_x = 4;
+    if (this->time_icon_font_ != nullptr) {
+      std::string clock_glyph = this->resolve_icon_glyph_("mdi:clock-outline");
+      if (!clock_glyph.empty()) {
+        it.printf(4, 4, this->time_icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s",
+                  clock_glyph.c_str());
+        time_x = 20;
+      }
+    }
     if (time_valid) {
-      it.printf(4, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "TIME %02d:%02d:%02d", now.hour,
-                now.minute, now.second);
-      it.printf(width - 4, 4, this->text_font_, accent_color, display::TextAlign::TOP_RIGHT, "%02d-%02d",
-                now.day_of_month, now.month);
+      char time_buf[32];
+      char date_buf[32];
+      now.strftime(time_buf, sizeof(time_buf), this->time_format_.c_str());
+      now.strftime(date_buf, sizeof(date_buf), this->date_format_.c_str());
+      it.printf(time_x, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "%s", time_buf);
+      it.printf(width - 4, 4, this->text_font_, accent_color, display::TextAlign::TOP_RIGHT, "%s", date_buf);
     } else {
-      it.printf(4, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "TIME --:--");
+      it.printf(time_x, 4, this->text_font_, accent_color, display::TextAlign::TOP_LEFT, "--:--");
     }
   }
 
@@ -303,7 +314,6 @@ void DisplayFramework::render(display::Display &it) {
 
   // Page content
   const int icon_page_x = 6;
-  const int line_height = 18;
 
   int page_index = this->current_page_index_;
   if (page_index < 0 || page_index >= static_cast<int>(this->slots_.size()) ||
@@ -322,6 +332,7 @@ void DisplayFramework::render(display::Display &it) {
     font::Font *page_font = (slot.font_size == 1 && this->text_font_large_ != nullptr)
                                 ? this->text_font_large_
                                 : this->text_font_;
+    const int line_height = (slot.font_size == 1 && this->text_font_large_ != nullptr) ? 24 : 18;
     std::string page_icon = this->resolve_icon_glyph_(slot.icon);
     bool has_icon = !page_icon.empty();
     const int text_x = has_icon ? 64 : 6;
@@ -330,26 +341,45 @@ void DisplayFramework::render(display::Display &it) {
       it.printf(icon_page_x, page_y, this->icon_font_, accent_color, display::TextAlign::TOP_LEFT, "%s",
                 page_icon.c_str());
     }
+    const int max_content_w = width - text_x - 4;
+    const int max_content_y = height - 24;  // stop before footer
+    int content_y = page_y + 2;
+
     if (!slot.title.empty()) {
-      it.printf(text_x, page_y + 2, page_font, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
-                slot.title.c_str());
+      for (const auto &line : this->wrap_text_(slot.title, page_font, max_content_w)) {
+        if (content_y >= max_content_y) break;
+        it.printf(text_x, content_y, page_font, this->title_color_, display::TextAlign::TOP_LEFT, "%s",
+                  line.c_str());
+        content_y += line_height;
+      }
     }
     if (!slot.subtitle.empty()) {
-      it.printf(text_x, page_y + 2 + line_height, page_font, this->subtitle_color_,
-                display::TextAlign::TOP_LEFT, "%s", slot.subtitle.c_str());
+      for (const auto &line : this->wrap_text_(slot.subtitle, page_font, max_content_w)) {
+        if (content_y >= max_content_y) break;
+        it.printf(text_x, content_y, page_font, this->subtitle_color_, display::TextAlign::TOP_LEFT, "%s",
+                  line.c_str());
+        content_y += line_height;
+      }
     }
-    std::vector<std::string> lines;
-    this->split_details_(slot.details, lines);
-    for (size_t i = 0; i < lines.size(); i++) {
-      it.printf(text_x, page_y + 2 + (line_height * (2 + static_cast<int>(i))), page_font, this->detail_color_,
-                display::TextAlign::TOP_LEFT, "%s", lines[i].c_str());
+    std::vector<std::string> detail_parts;
+    this->split_details_(slot.details, detail_parts);
+    for (const auto &part : detail_parts) {
+      for (const auto &line : this->wrap_text_(part, page_font, max_content_w)) {
+        if (content_y >= max_content_y) break;
+        it.printf(text_x, content_y, page_font, this->detail_color_, display::TextAlign::TOP_LEFT, "%s",
+                  line.c_str());
+        content_y += line_height;
+      }
+      if (content_y >= max_content_y) break;
     }
     if (slot.progress > 0) {
       const int bar_width = 140;
       const int bar_height = 10;
       const int bar_x = text_x;
-      const int bar_y = page_y + 2 + (line_height * (2 + static_cast<int>(lines.size())));
-      this->draw_progress_bar_(it, bar_x, bar_y, bar_width, bar_height, slot.progress, accent_color);
+      const int bar_y = content_y + 2;
+      if (bar_y + bar_height < max_content_y) {
+        this->draw_progress_bar_(it, bar_x, bar_y, bar_width, bar_height, slot.progress, accent_color);
+      }
     }
   } else {
     it.printf(6, page_y + 2, this->text_font_, this->detail_color_, display::TextAlign::TOP_LEFT, "NO PAGES");
@@ -778,6 +808,7 @@ std::string DisplayFramework::resolve_icon_glyph_(const std::string &icon_name) 
   if (icon_name == "mdi:weather-windy") return "\U000F059D";
   if (icon_name == "mdi:bell") return "\U000F009A";
   if (icon_name == "mdi:bell-ring") return "\U000F009F";
+  if (icon_name == "mdi:clock-outline") return "\U000F0954";
 
   return "\U000F0026";
 }
@@ -812,6 +843,61 @@ void DisplayFramework::split_details_(const std::string &details, std::vector<st
     }
     pos = next + delimiter.size();
   }
+}
+
+std::vector<std::string> DisplayFramework::wrap_text_(const std::string &text, font::Font *font,
+                                                       int max_width) const {
+  std::vector<std::string> result;
+  if (text.empty()) {
+    return result;
+  }
+  if (font == nullptr || max_width <= 0) {
+    result.push_back(text);
+    return result;
+  }
+
+  auto measure_w = [&](const std::string &s) -> int {
+    int w = 0, x_off = 0, bl = 0, h = 0;
+    font->measure(s.c_str(), &w, &x_off, &bl, &h);
+    return w;
+  };
+
+  // Fast path: entire text fits on one line
+  if (measure_w(text) <= max_width) {
+    result.push_back(text);
+    return result;
+  }
+
+  std::string current_line;
+  std::string current_word;
+
+  auto flush_word = [&]() {
+    if (current_word.empty()) return;
+    std::string candidate = current_line.empty() ? current_word : current_line + " " + current_word;
+    if (measure_w(candidate) <= max_width) {
+      current_line = candidate;
+    } else {
+      if (!current_line.empty()) {
+        result.push_back(current_line);
+      }
+      // Single word wider than max_width: push as-is (no hyphenation)
+      current_line = current_word;
+    }
+    current_word.clear();
+  };
+
+  for (char c : text) {
+    if (c == ' ') {
+      flush_word();
+    } else {
+      current_word += c;
+    }
+  }
+  flush_word();
+  if (!current_line.empty()) {
+    result.push_back(current_line);
+  }
+  return result;
 }
 
 void DisplayFramework::request_update_() {
