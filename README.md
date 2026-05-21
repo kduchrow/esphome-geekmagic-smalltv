@@ -1,5 +1,7 @@
 # ESPHome GeekMagic SmallTV Display Framework
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 This repo provides an ESPHome external component that implements a reusable display framework with dynamic pages, rotation, and expiry. Users keep their ESPHome YAML minimal and feed cards/pages via services.
 
 > **Hardware:** Currently developed and tested on the **GeekMagic SmallTV Ultra** (ESP8266, 240×240 ST7789V display). Other GeekMagic models or similar ESP-based displays may work but are untested.
@@ -442,3 +444,8 @@ Up to `max_headers` (default 3) messages can be queued via `set_header`. They ro
 - When a page has no icon, text expands to use the full display width.
 - Time and date formats use `strftime` format strings (e.g. `%H:%M` for 24 h time, `%d.%m.%Y` for full date). Configure via `time_format` and `date_format`.
 - Add a small clock icon to the time bar by setting `time_icon_font` to a 14 px MDI font that includes the `mdi:clock-outline` glyph (`\U000F0954`).
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
+
