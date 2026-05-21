@@ -1,5 +1,5 @@
 # .meta-config/project.yaml — Projekt-Konfiguration für agent-meta
-agent-meta-version: 0.45.0
+agent-meta-version: 0.46.2
 
 ai-providers:
   - Opencode
@@ -20,7 +20,6 @@ roles:
   - ideation
   - meta-feedback
   - agent-meta-manager
-  - reviewer
   - log-analyzer
 
 project:

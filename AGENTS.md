@@ -6,7 +6,7 @@ ESPHome external component providing a reusable display framework for the GeekMa
 <!-- This block is automatically updated by sync.py on every sync. -->
 <!-- Manual changes here will be overwritten. -->
 
-Generiert von agent-meta v0.45.0 — `2026-05-20`
+Generiert von agent-meta v0.46.2 — `2026-05-21`
 DoD-Preset: **rapid-prototyping** | REQ-Traceability: false | Tests: false | Codebase-Overview: false | Security-Audit: false
 
 > **Einstiegspunkt:** Starte mit dem `orchestrator`-Agenten für alle Entwicklungsaufgaben.
@@ -16,7 +16,7 @@ DoD-Preset: **rapid-prototyping** | REQ-Traceability: false | Tests: false | Cod
 | `agent-meta-manager` | agent-meta verwalten: Upgrade, Sync, Feedback, projektspezifische Agenten anlegen |
 | `developer` | Feature-Implementierung und Bugfixes nach REQ-IDs |
 | `documenter` | Doku pflegen: CODEBASE_OVERVIEW, ARCHITECTURE, README, Erkenntnisse |
-| `feature` | Neues Feature end-to-end durchführen: Branch → REQ → TDD → Dev → Validate → PR |
+| `feature` | Feature-Lifecycle-Subagent: Branch → REQ → TDD → Dev → Validate → PR. Wird vom Orchestrator gestartet, nicht direkt vom User. |
 | `git` | Commits, Branches, Tags, Push/Pull und alle Git-Operationen |
 | `ideation` | Neue Ideen explorieren, Vision schärfen, Übergabe an requirements |
 | `log-analyzer` | Log-Analyse: Fehler clustern, Severity klassifizieren (RFC 5424), Findings als Issues oder Tasks delegieren |
@@ -24,8 +24,7 @@ DoD-Preset: **rapid-prototyping** | REQ-Traceability: false | Tests: false | Cod
 | `orchestrator` | Einstiegspunkt für alle Entwicklungsaufgaben — koordiniert alle anderen Agenten |
 | `release` | Versioning, Changelog, Build-Artifact, GitHub Release erstellen |
 | `requirements` | Anforderungen aufnehmen, REQ-IDs vergeben, REQUIREMENTS.md pflegen |
-| `reviewer` | Code-Review: Qualität, Stil, Logik, Best Practices — vor dem Merge |
-| `validator` | Code gegen REQs prüfen, DoD-Checkliste, Traceability-Audit |
+| `validator` | Interner Qualitäts-Checker: DoD-Checkliste, Traceability-Audit. Wird vom Orchestrator nach der Implementierung aufgerufen. Nicht für direkte User-Fragen oder Setup-Hilfe. |
 
 ## Regeln
 
@@ -253,60 +252,6 @@ Datei nicht committen — sie ist gitignored (`.opencode/pending-tasks.md`).
 
 ---
 
-# Multi-Repo Workspace Conventions
-
-> Activated when `WORKSPACE_REPOS` is configured in `project.yaml`.
-
-## Rules
-
-1. **Agent files live ONLY in the meta-repo root.**
-   - Never create `.claude/`, `.opencode/`, `.continue/`, `.gemini/` directories in sibling repos.
-   - All agent configuration is managed centrally in the meta-repo.
-
-2. **Use absolute or relative paths from the meta-repo root.**
-   - Sibling repos: `../sharkord-vid-with-friends/src/index.ts`
-   - Always verify the working directory before running commands.
-
-3. **Build and test commands must run in the correct repo directory.**
-   - Example: `cd ../sharkord-vid-with-friends && bun test`
-
-4. **Workspace-level documentation belongs in the meta-repo.**
-   - Cross-plugin conventions → `docs/CONVENTIONS.md`
-   - Cross-plugin patterns → `docs/PATTERNS.md`
-   - Lessons learned → `docs/LEARNINGS.md`
-   - Plugin-specific docs → stay in the respective plugin repo
-
-5. **Standardized learning capture.**
-   - When a developer discovers a pattern or solves a bug, use `.agent-meta/templates/learning-capture.md`
-   - Propose adding it to the meta-repo's `docs/LEARNINGS.md`
-
-## VS Code Workspace (Optional)
-
-If using VS Code, create a `.code-workspace` file in the meta-repo root:
-
-```json
-{
-  "folders": [
-    { "name": "sharkord-meta", "path": "." },
-    { "name": "vid-with-friends", "path": "../sharkord-vid-with-friends" },
-    { "name": "stream-with-friends", "path": "../sharkord-stream-with-friends" },
-    { "name": "hero-introducer", "path": "../sharkord-hero-introducer" }
-  ]
-}
-```
-
-## Cross-Repo Operations
-
-When delegating to agents for cross-repo work:
-
-```
-Delegiere an: developer
-Aufgabe: Editiere ../sharkord-vid-with-friends/src/index.ts
-         Arbeitsverzeichnis: ../sharkord-vid-with-friends/
-```
-
----
-
 # Session-Abschluss — Erkenntnisse sichern
 
 Gilt für Hauptchat und Orchestrator.
@@ -346,50 +291,29 @@ Einstiegspunkt für alle Entwicklungsaufgaben: `orchestrator`-Agent.
 
 ## Immer Orchestrator
 
-Feature | Bugfix | Refactoring | Anforderungen | Tests | Audit | Release | Docker | Ideation
+Feature | Bugfix | Refactoring | Anforderungen | Tests | Audit | Release | Docker | Ideation | Analyse | Design
 
-## Routing-Signale — wann welcher Agent
-
-### Explorative / Research-Fragen → `ideation`
-
-Direkt an `ideation` delegieren (nicht inline beantworten) wenn:
-
-- Frage beginnt mit "Wie könnte ich...", "Was wäre wenn...", "Welche Möglichkeiten gibt es..."
-- Expliziter Recherche-Wunsch: "Recherchiere...", "Suche Beispiele...", "Vergleiche Ansätze..."
-- WebSearch/WebFetch nötig (externe Quellen, Best Practices, andere Projekte)
-- Frage hat keinen konkreten Implementierungs-Scope (kein Ticket, kein Code-Pfad)
-
-**Grenze:** Wenn eine Frage direkt in einem laufenden Task beantwortet werden kann (≤2 Sätze, kein Research nötig) → inline. Sonst → `ideation`.
-
-### Log-Analyse → `log-analyzer`
-
-Bei: Fehler-Logs, Stack Traces, Produktions-Incidents, Monitoring-Daten analysieren.
-
-### Performance → `performance`
-
-Bei: "ist langsam", "zu viel Memory", "Bottleneck finden", "profilen".
-
-### Code-Review → `reviewer`
-
-Bei: PR-Review, "schau dir den Code an", "ist das gut implementiert?", vor dem Merge.
+> **Der Orchestrator wählt automatisch das kosteneffizienteste Model-Tier** für jede Delegation (nano → fast → balanced → powerful → max). Nie direkt an teurere Agenten delegieren als nötig.
 
 ## Ausnahmen — direkt an
 
 | Aufgabe | Agent |
 |---------|-------|
-| Git-Commit / Push / Tag / Frage | `git` |
-| Erkenntnisse speichern | `documenter` |
-| agent-meta Upgrade / Sync | `agent-meta-manager` |
-| Projekt-Feedback einreichen (Bugs, Features) | `feedback` |
-| agent-meta-Feedback einreichen | `meta-feedback` |
-| Neues Feature (≥3 Dateien, Lifecycle) | `feature` → delegiert an `developer` |
+| Git-Operationen (Commit, Push, Branch, Tag, PR) | `git` |
+| Erkenntnisse speichern (Session-Ende) | `documenter` |
+| agent-meta Upgrade / Sync / Extension / Meta-Fragen | `agent-meta-manager` |
+| Projekt-Feedback als GitHub Issue einreichen | `feedback` |
 
-> **`feature` vs. `developer`:**
-> - `feature` koordiniert den gesamten Lifecycle (Branch, REQ, Dev, Test, PR) — implementiert **nichts** selbst
-> - `developer` implementiert und fixt direkt
-> - Bei parallelen unabhängigen Teilaufgaben: mehrere `developer` via Map-Reduce statt einem `feature`
-> - **ENTWICKLUNGSARBEITEN IMMER DURCH `developer`** — auch 1 Datei, wenn inhaltlich (kein Tippfehler)
-> - Faustregel: Tippfehler (1 Datei, 1 Zeile) → selbst | Alles andere → `developer` | Lifecycle nötig → `feature`
+## Was NIE direkt an andere Agenten geht
+
+| Falsch | Richtig |
+|--------|---------|
+| "Wie funktioniert der Sync?" → `git` | → `agent-meta-manager` |
+| "Ist mein Code gut?" → `validator` | → `orchestrator` (der entscheidet ob/wann `validator`) |
+| "Erstelle ein Feature" → `feature` (direkt) | → `orchestrator` (der startet `feature`) |
+| "Was bedeutet diese Rule?" → `validator` | → `agent-meta-manager` |
+| "Analysiere die Codebase" → im Hauptchat | → `orchestrator` → `ideation` |
+| "Entwirf ein Konzept" → im Hauptchat | → `orchestrator` → `ideation` |
 
 ## Hauptchat ohne Orchestrator
 
