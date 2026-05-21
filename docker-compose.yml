@@ -11,13 +11,12 @@ services:
   # Integration test runner — sends test scenarios to the physical device
   # 
   # Setup (once):
-  #   cp .env.example .env        # then edit .env and paste your ENCRYPTION_KEY
-  #
-  # Usage (inline key):
-  #   ENCRYPTION_KEY="<your-key>" docker compose run --rm test
+  #   cp .env.example .env        # then edit .env and fill in ENCRYPTION_KEY
   #
   # Usage (with .env file — Docker Compose reads it automatically):
   #   docker compose run --rm test
+  #   docker compose run --rm test --filter "corner"
+  #   docker compose run --rm test --delay 2
   test:
     image: python:3.12-slim
     network_mode: host          # needed to reach mDNS (*.local) on the LAN
@@ -26,6 +25,7 @@ services:
     working_dir: /workspace
     environment:
       - ENCRYPTION_KEY          # pass through from host environment
-    entrypoint: ["sh", "-c", "pip install aioesphomeapi --quiet && python tests/test_display.py \"$@\"", "--"]
+      - DEVICE_HOST             # optional: override default host
+    entrypoint: ["sh", "-c", "pip install aioesphomeapi --quiet && python -m tests.test_display \"$@\"", "--"]
     profiles:
       - test                    # not started by 'docker compose up'
