@@ -2,9 +2,9 @@
 
 import os
 
-ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", "")
+ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY") or ""
 
-DEFAULT_HOST = os.environ.get("DEVICE_HOST", "arbeitszimmer-display.local")
+DEFAULT_HOST = os.environ.get("DEVICE_HOST") or "arbeitszimmer-display.local"
 DEFAULT_PORT = 6053
 DEFAULT_DELAY = 4
 
