@@ -3,6 +3,7 @@
 
 # Secrets — never commit credentials
 **/secrets.yaml
+.env
 
 # Personal device configs (gitignored — use examples/ as templates)
 /my_examples/

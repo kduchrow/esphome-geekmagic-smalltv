@@ -5,13 +5,16 @@ Display Framework — Integration Test Script
 Calls all ESPHome native API services in various combinations so you can
 visually verify formatting on the physical device.
 
+Set the ENCRYPTION_KEY environment variable before running:
+    export ENCRYPTION_KEY="<your-api-encryption-key>"
+
 Usage (via Docker Compose — recommended):
-    docker compose run --rm test
+    ENCRYPTION_KEY="<your-key>" docker compose run --rm test
 
 Usage (direct Python):
     pip install aioesphomeapi
-    python tests/test_display.py
-    python tests/test_display.py --host 192.168.198.41 --delay 5
+    ENCRYPTION_KEY="<your-key>" python tests/test_display.py
+    ENCRYPTION_KEY="<your-key>" python tests/test_display.py --host 192.168.198.41 --delay 5
 
 Arguments:
     --host    Device hostname or IP  (default: arbeitszimmer-display.local)
@@ -32,6 +35,7 @@ Notes on icons:
 
 import argparse
 import asyncio
+import os
 import sys
 
 try:
@@ -41,8 +45,7 @@ except ImportError:
     sys.exit(1)
 
 # ── Connection settings ───────────────────────────────────────────────────────
-# Encryption key from displayarbeitszimmer.base.yaml  api.encryption.key
-ENCRYPTION_KEY = "Pu0T9XatYALpR2HBL1wSrskkeKgLALswWayVbIkVFP0="
+ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", "")
 DEFAULT_HOST = "arbeitszimmer-display.local"
 DEFAULT_PORT = 6053
 DEFAULT_DELAY = 4  # seconds between scenarios
@@ -621,6 +624,12 @@ async def run_tests(host: str, port: int, delay: float, name_filter: str | None)
 
 
 def main():
+    if not ENCRYPTION_KEY:
+        print("ERROR: ENCRYPTION_KEY environment variable is not set.")
+        print("  export ENCRYPTION_KEY=\"<your-api-encryption-key>\"")
+        print("  The key is found in your ESPHome device YAML under api.encryption.key.")
+        sys.exit(1)
+
     parser = argparse.ArgumentParser(description="Display Framework integration tests")
     parser.add_argument("--host", default=DEFAULT_HOST, help="Device hostname or IP")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="ESPHome API port")
