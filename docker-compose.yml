@@ -25,7 +25,7 @@ services:
     working_dir: /workspace
     environment:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - DEVICE_HOST=${DEVICE_HOST}
+      - DEVICE_HOST=${DEVICE_HOST:-arbeitszimmer-display.local}
     entrypoint: ["sh", "-c", "pip install aioesphomeapi --quiet && python -m tests.test_display \"$@\"", "--"]
     profiles:
       - test                    # not started by 'docker compose up'
