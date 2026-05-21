@@ -24,8 +24,8 @@ services:
       - .:/workspace:ro
     working_dir: /workspace
     environment:
-      - ENCRYPTION_KEY          # pass through from host environment
-      - DEVICE_HOST             # optional: override default host
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - DEVICE_HOST=${DEVICE_HOST}
     entrypoint: ["sh", "-c", "pip install aioesphomeapi --quiet && python -m tests.test_display \"$@\"", "--"]
     profiles:
       - test                    # not started by 'docker compose up'
