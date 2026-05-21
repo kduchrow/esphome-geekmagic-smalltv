@@ -21,6 +21,7 @@ Usage (direct Python):
 
 import argparse
 import asyncio
+import copy
 import sys
 
 try:
@@ -79,17 +80,37 @@ async def run_tests(host: str, port: int, delay: float, name_filter: str | None)
     print(f"Running {len(filtered)} scenario(s) with {delay}s delay between each.\n")
 
     for i, scenario in enumerate(filtered, 1):
-        print(f"[{i:>2}/{len(filtered)}] {scenario['name']}")
+        test_id = f"[{i:>2}/{len(filtered)}]"
+        print(f"{test_id} {scenario['name']}")
+
+        def _labeled(action_args, action_type):
+            """Inject test ID into title so it appears on the display."""
+            if action_type == "set_notification":
+                return action_args
+            labeled = copy.deepcopy(action_args)
+            prefix = f"{test_id} "
+            for field in ("title", "subtitle"):
+                if field in labeled and labeled[field]:
+                    labeled[field] = prefix + labeled[field]
+                    break
+            return labeled
+
         try:
             if "_before" in scenario:
                 before = scenario["_before"]
-                await call_service(client, services, before["action"], before["args"])
+                btype = before["action"]
+                bargs = _labeled(before["args"], btype)
+                await call_service(client, services, btype, bargs)
 
-            await call_service(client, services, scenario["action"], scenario["args"])
+            atype = scenario["action"]
+            args = _labeled(scenario["args"], atype)
+            await call_service(client, services, atype, args)
 
             if "_also" in scenario:
                 also = scenario["_also"]
-                await call_service(client, services, also["action"], also["args"])
+                atype2 = also["action"]
+                aargs2 = _labeled(also["args"], atype2)
+                await call_service(client, services, atype2, aargs2)
 
         except Exception as exc:
             print(f"         ERROR: {exc}")
