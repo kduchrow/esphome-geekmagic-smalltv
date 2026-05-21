@@ -54,6 +54,11 @@ SCENARIOS = [
     # Baseline clear
     # ═══════════════════════════════════════════════════════════════════════════
     {
+        "name": "CLEAR — notification off",
+        "action": "set_notification",
+        "args": {"enabled": False, "icon": ""},
+    },
+    {
         "name": "CLEAR — remove all pages and headers",
         "action": "set_page",
         "args": {"page_id": "test", "active": False, "icon": "", "title": "",

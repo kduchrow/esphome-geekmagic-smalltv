@@ -101,6 +101,7 @@ async def run_tests(host: str, port: int, delay: float, name_filter: str | None)
                 btype = before["action"]
                 bargs = _labeled(before["args"], btype)
                 await call_service(client, services, btype, bargs)
+                await asyncio.sleep(0.15)  # let device process clear before next action
 
             atype = scenario["action"]
             args = _labeled(scenario["args"], atype)

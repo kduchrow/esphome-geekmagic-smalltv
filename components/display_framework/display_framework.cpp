@@ -239,7 +239,13 @@ void DisplayFramework::render(display::Display &it) {
     dots_y = separator_y + 4;
     page_y = dots_y + 10;
   } else {
-    page_y = time_height + 6;
+    const bool has_pages = this->has_active_pages_(now_ts);
+    if (has_pages) {
+      dots_y = time_height + 4;
+      page_y = dots_y + 10;
+    } else {
+      page_y = time_height + 6;
+    }
   }
 
   // Time bar
@@ -265,8 +271,8 @@ void DisplayFramework::render(display::Display &it) {
     }
   }
 
-  // Page dots (header mode only)
-  if (header_mode && dots_y >= 0) {
+  // Page dots (rendered whenever there are active pages)
+  if (dots_y >= 0) {
     int active_count = 0;
     for (const auto &slot : this->slots_) {
       if (slot.active && !this->is_expired_(slot, now_ts)) {
@@ -531,6 +537,13 @@ void DisplayFramework::refresh_current_page_() {
 bool DisplayFramework::has_active_header_() const {
   if (!this->headers_.empty()) return true;
   return this->show_default_header_;
+}
+
+bool DisplayFramework::has_active_pages_(uint32_t now_ts) const {
+  for (const auto &slot : this->slots_) {
+    if (slot.active && !this->is_expired_(slot, now_ts)) return true;
+  }
+  return false;
 }
 
 void DisplayFramework::render_header_(display::Display &it, uint32_t now_ts, Color accent_color,

@@ -104,6 +104,7 @@ class DisplayFramework : public Component, public api::CustomAPIDevice {
   void refresh_current_page_();
   void rotate_header_();
   bool has_active_header_() const;
+  bool has_active_pages_(uint32_t now_ts) const;
   void render_header_(display::Display &it, uint32_t now_ts, Color accent_color, int header_text_y, int header_icon_y);
   void render_footer_(display::Display &it, Color accent_color);
   int wifi_level_from_rssi_(float rssi) const;
